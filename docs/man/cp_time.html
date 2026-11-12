@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C+ Manual // Precision Clocks (cp_time)</title>
+  <style>
+    
+    :root {
+      --bg: #000000;
+      --bg-dark: #050505;
+      --surface: #0a0a0a;
+      --surface-hover: #121214;
+      --border: #1a1a1a;
+      --border-bright: #27272a;
+      --azure: #16e1e5;
+      --azure-dim: rgba(22, 225, 229, 0.08);
+      --text: #c4c4c8;
+      --text-bright: #ffffff;
+      --text-dim: #71717a;
+      
+      /* VS Code / Neovim 1:1 C Syntax Highlighting */
+      --tok-keyword: #c586c0;
+      --tok-type: #4ec9b0;
+      --tok-func: #dcdcaa;
+      --tok-string: #ce9178;
+      --tok-number: #b5cea8;
+      --tok-comment: #6a9955;
+      --tok-macro: #c586c0;
+      
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* Code Highlight Styles */
+    .tok-keyword { color: var(--tok-keyword); font-weight: 600; }
+    .tok-type { color: var(--tok-type); font-weight: 500; }
+    .tok-func { color: var(--tok-func); }
+    .tok-string { color: var(--tok-string); }
+    .tok-number { color: var(--tok-number); }
+    .tok-comment { color: var(--tok-comment); font-style: italic; }
+    .tok-macro { color: var(--tok-macro); font-weight: 600; }
+
+    /* Code Container */
+    .code-container {
+      background: #050505;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+    .code-header {
+      background: #0a0a0a;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+      background: var(--azure-dim);
+      border-color: var(--azure);
+      color: var(--azure);
+    }
+    .code-pre {
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-bright);
+    }
+
+    /* Headings */
+    h1 {
+      color: var(--text-bright);
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: -0.4px;
+    }
+    h2 {
+      color: var(--text-bright);
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      letter-spacing: -0.2px;
+    }
+    h3 {
+      color: #f4f4f5;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 22px;
+      margin-bottom: 8px;
+    }
+    p { margin-bottom: 14px; }
+    strong { color: var(--text-bright); }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    /* Inline Code */
+    p code, li code, td code {
+      background: #0a0a0a;
+      color: #f4f4f5;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    li { margin-bottom: 5px; }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #050505;
+    }
+    th {
+      background: #0a0a0a;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #141414;
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.01); }
+
+    /* Heading Anchor */
+    .heading-anchor {
+      color: var(--text-dim);
+      opacity: 0.3;
+      text-decoration: none;
+      margin-right: 6px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .heading-anchor:hover { opacity: 1; color: var(--azure); }
+
+    /* Anchors & Highlighting */
+    .anchor-target {
+      display: block;
+      position: relative;
+      top: -70px;
+      visibility: hidden;
+    }
+    .highlight-target {
+      animation: targetPulse 2s ease-out;
+    }
+    @keyframes targetPulse {
+      0% { background: rgba(22, 225, 229, 0.2) !important; outline: 1px solid var(--azure); border-radius: 4px; }
+      100% { background: transparent; }
+    }
+    
+
+    /* Page Layout */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #000000;
+    }
+    .site-header {
+      background: #000000;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #000000;
+      border: 1px solid var(--azure);
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .brand-badge span { color: var(--azure); }
+    .brand-text {
+      color: var(--text-bright);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .brand-text span {
+      color: var(--text-dim);
+      font-weight: 400;
+      font-size: 11px;
+      margin-left: 6px;
+    }
+    .header-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .header-nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .header-nav a:hover {
+      color: var(--azure);
+      border-color: var(--azure);
+    }
+
+    .main-body {
+      display: flex;
+      flex: 1;
+    }
+    .sidebar {
+      width: 250px;
+      background: #000000;
+      border-right: 1px solid var(--border);
+      padding: 12px 8px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      height: calc(100vh - 45px);
+      position: sticky;
+      top: 45px;
+    }
+    .sidebar-heading {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 10px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-bottom: 2px;
+      border-left: 2px solid transparent;
+      transition: all 0.1s ease;
+    }
+    .nav-item:hover {
+      background: var(--surface-hover);
+    }
+    .nav-item.active {
+      background: rgba(22, 225, 229, 0.04);
+      border-left-color: var(--azure);
+    }
+    .nav-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-title {
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .nav-sub {
+      font-size: 10px;
+      color: #52525b;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 32px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="site-header">
+      <a href="../index.html" class="brand-link">
+        <div class="brand-badge">C<span>+</span></div>
+        <div class="brand-text">Foundation Library <span>// Formal Manual</span></div>
+      </a>
+      <div class="header-nav">
+        <a href="../index.html">&larr; Telescope Search (/)</a>
+        <a href="https://github.com/IovAnto/Cplus-Lib" target="_blank">GitHub Repo</a>
+      </div>
+    </header>
+
+    <div class="main-body">
+      <aside class="sidebar">
+        <div class="sidebar-heading">18 Core Subsystems</div>
+        <a href="cp_core.html" class="nav-item "><span class="nav-title">cp_core</span><span class="nav-sub">Core Architecture</span></a>
+<a href="cp_mem.html" class="nav-item "><span class="nav-title">cp_mem</span><span class="nav-sub">Memory Subsystem</span></a>
+<a href="cp_str.html" class="nav-item "><span class="nav-title">cp_str</span><span class="nav-sub">Strings & Builders</span></a>
+<a href="cp_fs.html" class="nav-item "><span class="nav-title">cp_fs</span><span class="nav-sub">Filesystem & IO</span></a>
+<a href="cp_ds.html" class="nav-item "><span class="nav-title">cp_ds</span><span class="nav-sub">Data Structures</span></a>
+<a href="cp_graph.html" class="nav-item "><span class="nav-title">cp_graph</span><span class="nav-sub">Graphs & Paths</span></a>
+<a href="cp_algo.html" class="nav-item "><span class="nav-title">cp_algo</span><span class="nav-sub">Algorithms & Sorting</span></a>
+<a href="cp_math.html" class="nav-item "><span class="nav-title">cp_math</span><span class="nav-sub">SIMD & Fast Math</span></a>
+<a href="cp_thread.html" class="nav-item "><span class="nav-title">cp_thread</span><span class="nav-sub">Concurrency & Workers</span></a>
+<a href="cp_net.html" class="nav-item "><span class="nav-title">cp_net</span><span class="nav-sub">High-Performance Net</span></a>
+<a href="cp_tui.html" class="nav-item "><span class="nav-title">cp_tui</span><span class="nav-sub">Terminal UI & Telemetry</span></a>
+<a href="cp_hash.html" class="nav-item "><span class="nav-title">cp_hash</span><span class="nav-sub">Cryptographic Hashes</span></a>
+<a href="cp_map.html" class="nav-item "><span class="nav-title">cp_map</span><span class="nav-sub">Hash Maps & Sets</span></a>
+<a href="cp_args.html" class="nav-item "><span class="nav-title">cp_args</span><span class="nav-sub">CLI Argument Parser</span></a>
+<a href="cp_time.html" class="nav-item active"><span class="nav-title">cp_time</span><span class="nav-sub">Precision Clocks</span></a>
+<a href="cp_json.html" class="nav-item "><span class="nav-title">cp_json</span><span class="nav-sub">Streaming JSON Engine</span></a>
+<a href="cp_stack.html" class="nav-item "><span class="nav-title">cp_stack</span><span class="nav-sub">Cache-Friendly Stack</span></a>
+<a href="cp_os.html" class="nav-item "><span class="nav-title">cp_os</span><span class="nav-sub">Platform Subsystem</span></a>
+      </aside>
+
+      <main class="content-area">
+        <span id="module" class="anchor-target"></span><span id="specification" class="anchor-target"></span><span id="cp_time" class="anchor-target"></span><span id="time" class="anchor-target"></span><span id="stopwatch" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="profiling" class="anchor-target"></span><span id="subsystem" class="anchor-target"></span><h1 id="module-specification-cp-time-time-stopwatch-amp-profiling-subsystem"><a href="#module-specification-cp-time-time-stopwatch-amp-profiling-subsystem" class="heading-anchor">#</a> Module Specification: cp_time (Time, Stopwatch &amp; Profiling Subsystem)</h1>
+<h2 id="1-tl-dr"><a href="#1-tl-dr" class="heading-anchor">#</a> 1. TL;DR</h2>
+<p>The <code>cp_time</code> subsystem delivers nanosecond-precision monotonic timing, wall-clock ISO 8601 timestamps, explicit stopwatch measurements, and RAII-based block profiling without external library dependencies.</p>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-comment">/* 1. Nanosecond Monotonic Timestamp */</span>
+<span class="tok-type">u64</span> t0 = <span class="tok-func">TimeNowNs</span>();
+
+<span class="tok-comment">/* 2. RAII Auto-Cleaning Block Profiler */</span>
+{
+    <span class="tok-func">ProfileScope</span>(<span class="tok-string">&quot;Matrix Multiplication&quot;</span>);
+    <span class="tok-comment">// Code executes here; elapsed time is printed automatically on scope exit</span>
+}
+
+<span class="tok-comment">/* 3. Explicit Stopwatch */</span>
+<span class="tok-type">cp_stopwatch_t</span> sw = <span class="tok-func">StopwatchStart</span>();
+<span class="tok-comment">// ... work ...</span>
+<span class="tok-func">StopwatchStop</span>(&amp;sw);
+printf(<span class="tok-string">&quot;Elapsed: %.2f ms\n&quot;</span>, <span class="tok-func">StopwatchElapsedMs</span>(&amp;sw));
+
+<span class="tok-comment">/* 4. ISO 8601 String */</span>
+<span class="tok-type">char</span> ts[<span class="tok-number">32</span>];
+<span class="tok-func">TimeIso8601</span>(ts, <span class="tok-keyword">sizeof</span>(ts));
+printf(<span class="tok-string">&quot;UTC Timestamp: %s\n&quot;</span>, ts);</code></pre></div>
+<hr />
+<span id="formal" class="anchor-target"></span><span id="definitions" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="internal" class="anchor-target"></span><span id="architecture" class="anchor-target"></span><h2 id="2-formal-definitions-amp-internal-architecture"><a href="#2-formal-definitions-amp-internal-architecture" class="heading-anchor">#</a> 2. Formal Definitions &amp; Internal Architecture</h2>
+<span id="monotonic" class="anchor-target"></span><span id="clock" class="anchor-target"></span><span id="engine" class="anchor-target"></span><h3 id="2-1-monotonic-clock-engine"><a href="#2-1-monotonic-clock-engine" class="heading-anchor">#</a> 2.1 Monotonic Clock Engine</h3>
+<ul>
+<li>On POSIX platforms, <code>TimeNowNs</code> calls <code>clock_gettime(CLOCK_MONOTONIC, &amp;ts)</code>.</li>
+<li>It converts seconds and nanoseconds into a continuous unsigned 64-bit nanosecond integer: <code>(u64)ts.tv_sec * 1000000000ULL + (u64)ts.tv_nsec</code>.</li>
+<li>Guaranteed to never step backward, even if the system wall-clock adjusts due to NTP synchronization or daylight saving shifts.</li>
+</ul>
+<span id="struct" class="anchor-target"></span><span id="layout" class="anchor-target"></span><span id="cp_stopwatch_t" class="anchor-target"></span><h3 id="2-2-struct-layout-cp-stopwatch-t"><a href="#2-2-struct-layout-cp-stopwatch-t" class="heading-anchor">#</a> 2.2 Struct Layout: <code>cp_stopwatch_t</code></h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> {
+    <span class="tok-type">u64</span> start_ns;
+    <span class="tok-type">u64</span> stop_ns;
+    <span class="tok-type">bool</span> running;
+} <span class="tok-type">cp_stopwatch_t</span>;</code></pre></div>
+<ul>
+<li>Can be started, stopped, reset, or queried across various units (nanoseconds, microseconds, milliseconds, seconds).</li>
+</ul>
+<span id="raii" class="anchor-target"></span><span id="profiler" class="anchor-target"></span><span id="profilescope" class="anchor-target"></span><h3 id="2-3-raii-profiler-profilescope"><a href="#2-3-raii-profiler-profilescope" class="heading-anchor">#</a> 2.3 RAII Profiler: <code>ProfileScope</code></h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> {
+    <span class="tok-keyword">const</span> <span class="tok-type">char</span> *name;
+    <span class="tok-type">u64</span> start_ns;
+} <span class="tok-type">_cp_prof_scope_t</span>;
+
+<span class="tok-macro">#define</span> ProfileScope(name_str) \
+    <span class="tok-type">_cp_prof_scope_t</span> <span class="tok-func">CP_CONCAT</span>(_prof_scope_, __LINE__) __attribute__((cleanup(_cp_prof_scope_cleanup), unused)) = \
+        { .name = (name_str), .start_ns = cp_time_now_ns() }</code></pre></div>
+<ul>
+<li>Uses GCC/Clang <code>__attribute__((cleanup))</code> to invoke <code>_cp_prof_scope_cleanup</code> automatically when leaving the lexical block.</li>
+<li>Zero runtime overhead when not executing; 0 heap allocations.</li>
+</ul>
+<hr />
+<span id="operational" class="anchor-target"></span><span id="guarantees" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="contracts" class="anchor-target"></span><h2 id="3-operational-guarantees-amp-contracts"><a href="#3-operational-guarantees-amp-contracts" class="heading-anchor">#</a> 3. Operational Guarantees &amp; Contracts</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Precision</th>
+<th>Clock Source</th>
+<th>Monotonic</th>
+<th>Heap Allocations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span id="timenowns" class="anchor-target"></span><code>TimeNowNs</code></td>
+<td>1 ns</td>
+<td><span id="clock_monotonic" class="anchor-target"></span><code>CLOCK_MONOTONIC</code></td>
+<td>Yes</td>
+<td>0</td>
+</tr>
+<tr>
+<td><span id="timenowus" class="anchor-target"></span><code>TimeNowUs</code></td>
+<td>1 us</td>
+<td><span id="clock_monotonic" class="anchor-target"></span><code>CLOCK_MONOTONIC</code></td>
+<td>Yes</td>
+<td>0</td>
+</tr>
+<tr>
+<td><span id="timenowms" class="anchor-target"></span><code>TimeNowMs</code></td>
+<td>1 ms</td>
+<td><span id="clock_monotonic" class="anchor-target"></span><code>CLOCK_MONOTONIC</code></td>
+<td>Yes</td>
+<td>0</td>
+</tr>
+<tr>
+<td><span id="timeunixsec" class="anchor-target"></span><code>TimeUnixSec</code></td>
+<td>1 s</td>
+<td><span id="clock_realtime" class="anchor-target"></span><code>CLOCK_REALTIME</code></td>
+<td>No (Wall clock)</td>
+<td>0</td>
+</tr>
+<tr>
+<td><span id="timeiso8601" class="anchor-target"></span><code>TimeIso8601</code></td>
+<td>1 s</td>
+<td><code>gmtime_r</code> / <code>gmtime</code></td>
+<td>No (Wall clock)</td>
+<td>0</td>
+</tr>
+<tr>
+<td><span id="profilescope" class="anchor-target"></span><code>ProfileScope</code></td>
+<td>1 ns</td>
+<td><span id="clock_monotonic" class="anchor-target"></span><code>CLOCK_MONOTONIC</code></td>
+<td>Yes</td>
+<td>0</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="api" class="anchor-target"></span><span id="matrix" class="anchor-target"></span><h2 id="4-api-matrix"><a href="#4-api-matrix" class="heading-anchor">#</a> 4. API Matrix</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>PascalCase Macro</th>
+<th>Dot-Notation API</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Now (Nanoseconds)</td>
+<td><span id="timenowns" class="anchor-target"></span><code>TimeNowNs()</code></td>
+<td><span id="nowns" class="anchor-target"></span><code>time_api.nowNs()</code></td>
+<td>Current monotonic timestamp in nanoseconds</td>
+</tr>
+<tr>
+<td>Now (Microseconds)</td>
+<td><span id="timenowus" class="anchor-target"></span><code>TimeNowUs()</code></td>
+<td><span id="nowus" class="anchor-target"></span><code>time_api.nowUs()</code></td>
+<td>Current monotonic timestamp in fractional microseconds</td>
+</tr>
+<tr>
+<td>Now (Milliseconds)</td>
+<td><span id="timenowms" class="anchor-target"></span><code>TimeNowMs()</code></td>
+<td><span id="nowms" class="anchor-target"></span><code>time_api.nowMs()</code></td>
+<td>Current monotonic timestamp in fractional milliseconds</td>
+</tr>
+<tr>
+<td>Unix Epoch Seconds</td>
+<td><span id="timeunixsec" class="anchor-target"></span><code>TimeUnixSec()</code></td>
+<td><span id="unixsec" class="anchor-target"></span><code>time_api.unixSec()</code></td>
+<td>Standard UTC timestamp in seconds since 1970</td>
+</tr>
+<tr>
+<td>Sleep (ms)</td>
+<td><span id="timesleepms" class="anchor-target"></span><code>TimeSleepMs(ms)</code></td>
+<td><span id="sleepms" class="anchor-target"></span><code>time_api.sleepMs(ms)</code></td>
+<td>Suspend thread execution for specified milliseconds</td>
+</tr>
+<tr>
+<td>Sleep (us)</td>
+<td><span id="timesleepus" class="anchor-target"></span><code>TimeSleepUs(us)</code></td>
+<td><span id="sleepus" class="anchor-target"></span><code>time_api.sleepUs(us)</code></td>
+<td>Suspend thread execution for specified microseconds</td>
+</tr>
+<tr>
+<td>ISO 8601 Stamp</td>
+<td><span id="timeiso8601" class="anchor-target"></span><code>TimeIso8601(buf, cap)</code></td>
+<td><span id="iso8601" class="anchor-target"></span><code>time_api.iso8601(buf, cap)</code></td>
+<td>Format UTC timestamp as <code>YYYY-MM-DDTHH:MM:SSZ</code></td>
+</tr>
+<tr>
+<td>Start Stopwatch</td>
+<td><span id="stopwatchstart" class="anchor-target"></span><code>StopwatchStart()</code></td>
+<td><span id="start" class="anchor-target"></span><code>stopwatch.start()</code></td>
+<td>Instantiate and activate a new stopwatch</td>
+</tr>
+<tr>
+<td>Stop Stopwatch</td>
+<td><span id="stopwatchstop" class="anchor-target"></span><code>StopwatchStop(sw)</code></td>
+<td><span id="stop" class="anchor-target"></span><code>stopwatch.stop(sw)</code></td>
+<td>Pause active stopwatch</td>
+</tr>
+<tr>
+<td>Reset Stopwatch</td>
+<td><span id="stopwatchreset" class="anchor-target"></span><code>StopwatchReset(sw)</code></td>
+<td><span id="reset" class="anchor-target"></span><code>stopwatch.reset(sw)</code></td>
+<td>Reset stopwatch counters to zero</td>
+</tr>
+<tr>
+<td>Elapsed Ns</td>
+<td><span id="stopwatchelapsedns" class="anchor-target"></span><code>StopwatchElapsedNs(sw)</code></td>
+<td><span id="elapsedns" class="anchor-target"></span><code>stopwatch.elapsedNs(sw)</code></td>
+<td>Calculate elapsed nanoseconds</td>
+</tr>
+<tr>
+<td>Elapsed Us</td>
+<td><span id="stopwatchelapsedus" class="anchor-target"></span><code>StopwatchElapsedUs(sw)</code></td>
+<td><span id="elapsedus" class="anchor-target"></span><code>stopwatch.elapsedUs(sw)</code></td>
+<td>Calculate elapsed microseconds</td>
+</tr>
+<tr>
+<td>Elapsed Ms</td>
+<td><span id="stopwatchelapsedms" class="anchor-target"></span><code>StopwatchElapsedMs(sw)</code></td>
+<td><span id="elapsedms" class="anchor-target"></span><code>stopwatch.elapsedMs(sw)</code></td>
+<td>Calculate elapsed milliseconds</td>
+</tr>
+<tr>
+<td>Elapsed Sec</td>
+<td><span id="stopwatchelapsedsec" class="anchor-target"></span><code>StopwatchElapsedSec(sw)</code></td>
+<td><span id="elapsedsec" class="anchor-target"></span><code>stopwatch.elapsedSec(sw)</code></td>
+<td>Calculate elapsed seconds</td>
+</tr>
+<tr>
+<td>Profile Scope</td>
+<td><span id="profilescope" class="anchor-target"></span><code>ProfileScope(name)</code></td>
+<td>-</td>
+<td>RAII block benchmark logger</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="use" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="5-use-cases"><a href="#5-use-cases" class="heading-anchor">#</a> 5. Use Cases</h2>
+<ol>
+<li><strong>Low-Latency Benchmarking</strong>: Measure subroutine latency down to single-digit nanoseconds without profiler skew.</li>
+<li><strong>Deterministic Frame Pacing</strong>: Maintain fixed 60 FPS / 144 FPS game loop ticks by computing <code>delta_time = TimeNowNs() - last_frame_ns</code>.</li>
+<li><strong>Structured Event Logs</strong>: Prefix telemetry and network packets with standardized ISO 8601 strings.</li>
+<li><strong>Scope Profiling</strong>: Rapidly identify algorithmic bottlenecks across nested blocks using <code>ProfileScope</code>.</li>
+</ol>
+<hr />
+<span id="complete" class="anchor-target"></span><span id="compilable" class="anchor-target"></span><span id="example" class="anchor-target"></span><h2 id="6-complete-compilable-example"><a href="#6-complete-compilable-example" class="heading-anchor">#</a> 6. Complete Compilable Example</h2>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+<span class="tok-macro">#include</span> <span class="tok-string">&lt;stdio.h&gt;</span>
+<span class="tok-macro">#include</span> <span class="tok-string">&lt;assert.h&gt;</span>
+
+<span class="tok-type">int</span> main(<span class="tok-keyword">void</span>) {
+    <span class="tok-comment">/* 1. Monotonic timing */</span>
+    <span class="tok-type">u64</span> t1 = time_api.nowNs();
+    time_api.sleepMs(<span class="tok-number">5</span>);
+    <span class="tok-type">u64</span> t2 = time_api.nowNs();
+    assert(t2 &gt; t1);
+    printf(<span class="tok-string">&quot;Sleep interval: %llu ns\n&quot;</span>, (<span class="tok-type">unsigned</span> <span class="tok-type">long</span> <span class="tok-type">long</span>)(t2 - t1));
+
+    <span class="tok-comment">/* 2. Stopwatch */</span>
+    <span class="tok-type">cp_stopwatch_t</span> sw = stopwatch.start();
+    time_api.sleepMs(<span class="tok-number">10</span>);
+    stopwatch.stop(&amp;sw);
+
+    <span class="tok-type">f64</span> ms = stopwatch.elapsedMs(&amp;sw);
+    assert(ms &gt;= <span class="tok-number">9</span>.<span class="tok-number">0</span>);
+    printf(<span class="tok-string">&quot;Stopwatch measured: %.2f ms\n&quot;</span>, ms);
+
+    <span class="tok-comment">/* 3. ISO 8601 Formatting */</span>
+    <span class="tok-type">char</span> buf[<span class="tok-number">32</span>];
+    time_api.iso8601(buf, <span class="tok-keyword">sizeof</span>(buf));
+    assert(strlen(buf) == <span class="tok-number">20</span>); <span class="tok-comment">// &quot;YYYY-MM-DDTHH:MM:SSZ&quot;</span>
+    printf(<span class="tok-string">&quot;Current ISO timestamp: %s\n&quot;</span>, buf);
+
+    <span class="tok-comment">/* 4. RAII Scoped profiler */</span>
+    {
+        <span class="tok-func">ProfileScope</span>(<span class="tok-string">&quot;Transient Compute Block&quot;</span>);
+        <span class="tok-keyword">volatile</span> <span class="tok-type">int</span> sum = <span class="tok-number">0</span>;
+        <span class="tok-keyword">for</span> (<span class="tok-type">int</span> i = <span class="tok-number">0</span>; i &lt; <span class="tok-number">100000</span>; i++) {
+            sum += i;
+        }
+    }
+
+    <span class="tok-keyword">return</span> <span class="tok-number">0</span>;
+}</code></pre></div>
+<hr />
+<span id="limitations" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="edge" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="7-limitations-amp-edge-cases"><a href="#7-limitations-amp-edge-cases" class="heading-anchor">#</a> 7. Limitations &amp; Edge Cases</h2>
+<ul>
+<li><strong>Resolution Dependent on Kernel</strong>: While <code>TimeNowNs</code> returns integer nanoseconds, hardware timers and OS kernel ticks dictate the ultimate precision (typically 1 to 10 ns on modern x86-64 hardware).</li>
+<li><strong>Sleep Granularity</strong>: <code>TimeSleepMs</code> and <code>TimeSleepUs</code> call the OS scheduler. Actual sleep duration may be extended by scheduler scheduling quanta (~0.1 ms to 1 ms).</li>
+</ul>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.borderColor = 'var(--azure)';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.borderColor = '';
+        }, 1500);
+      });
+    }
+
+    function scrollToAnchor() {
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+      const cleanHash = decodeURIComponent(rawHash).toLowerCase().replace(/[^a-z0-9_]/g, '');
+      let target = document.getElementById(rawHash) || document.getElementById(cleanHash);
+      if (!target) {
+        const candidates = document.querySelectorAll('h1, h2, h3, h4, td, code, th, span[id]');
+        for (const el of candidates) {
+          const id = (el.id || '').toLowerCase();
+          const text = (el.textContent || '').toLowerCase();
+          if (id === cleanHash || id.includes(cleanHash) || text.includes(cleanHash)) {
+            target = el.closest('tr') || el;
+            break;
+          }
+        }
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-target');
+        setTimeout(() => { target.classList.remove('highlight-target'); }, 2500);
+      }
+    }
+    window.addEventListener('DOMContentLoaded', scrollToAnchor);
+    window.addEventListener('hashchange', scrollToAnchor);
+  </script>
+</body>
+</html>

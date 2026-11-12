@@ -1,0 +1,43 @@
+=================================================================================
+  SCIENTIFIC EXPERIMENT REPORT: STRING PARSING & FILE I/O LATENCY
+=================================================================================
+
+--- PART A: CSV Tokenization (Length: 78 bytes, 4 tokens x 500000 iterations) ---
+
+[EXPERIMENT 1.1] Pure C (strdup + strtok_r tokenization + free copy)
+  Run 1:   200.43 ms
+  Run 2:    94.83 ms
+  Run 3:    65.62 ms
+  Run 4:    63.54 ms
+  Run 5:    61.94 ms
+  >> Mean:    97.27 ms | Min:    61.94 ms | Max:   200.43 ms | StdDev: ±52.98 ms | Latency:   194.54 ns/op
+
+[EXPERIMENT 1.2] Cplus StrSplit (Zero-Allocation StrView Slices)
+  Run 1:    26.78 ms
+  Run 2:    29.16 ms
+  Run 3:    26.54 ms
+  Run 4:    25.40 ms
+  Run 5:    27.04 ms
+  >> Mean:    26.99 ms | Min:    25.40 ms | Max:    29.16 ms | StdDev: ± 1.22 ms | Latency:    53.97 ns/op
+  >> SPEEDUP:     3.60x FASTER than Pure C
+
+--- PART B: Whole File Read (Payload: 99 bytes x 2000 iterations) ---
+
+[EXPERIMENT 2.1] Pure C (fopen + fseek + ftell + malloc + fread + fclose + free)
+  Run 1:    16.54 ms
+  Run 2:    16.68 ms
+  Run 3:    16.59 ms
+  Run 4:    16.70 ms
+  Run 5:    17.44 ms
+  >> Mean:    16.79 ms | Min:    16.54 ms | Max:    17.44 ms | StdDev: ± 0.33 ms | Latency:  8395.94 ns/op
+
+[EXPERIMENT 2.2] Cplus FileRead (One-Liner + Arena Batch Recycling)
+  Run 1:    17.08 ms
+  Run 2:    16.87 ms
+  Run 3:    16.81 ms
+  Run 4:    16.53 ms
+  Run 5:    16.78 ms
+  >> Mean:    16.81 ms | Min:    16.53 ms | Max:    17.08 ms | StdDev: ± 0.18 ms | Latency:  8406.05 ns/op
+  >> SPEEDUP:     1.00x FASTER than Pure C
+
+=================================================================================

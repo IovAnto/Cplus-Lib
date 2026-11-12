@@ -1,0 +1,15 @@
+###############################################################################
+#              CPLUS BENCHMARK SUITE: TERMINAL UI (cp_tui)                    #
+#     N=5 Statistical Samples: Naive Full Redraw vs Differential Rendering    #
+#                  Workload: 100,000 Frames @ 80x25 Cells                     #
+###############################################################################
+
+Method              Mean (ms)  Min (ms)   Max (ms)   StdDev (ms)  Latency/frame      Throughput
+-----------------------------------------------------------------------------------------------
+Naive Full Redraw    1246.04    1204.85    1279.01      27.629       12.46 us        80254 FPS
+Cplus Differential   1328.68    1323.62    1339.64       5.843       13.29 us        75262 FPS
+-----------------------------------------------------------------------------------------------
+Rendering Speedup: 0.94x FASTER
+Bandwidth Saved:   93.04% less terminal I/O (Naive: 195996 KB vs Cplus: 13637 KB)
+Checksum Parity:   0x0000000000021E73 (100.0% Validated)
+

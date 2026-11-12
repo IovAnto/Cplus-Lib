@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C+ Manual // Strings & Builders (cp_str)</title>
+  <style>
+    
+    :root {
+      --bg: #000000;
+      --bg-dark: #050505;
+      --surface: #0a0a0a;
+      --surface-hover: #121214;
+      --border: #1a1a1a;
+      --border-bright: #27272a;
+      --azure: #16e1e5;
+      --azure-dim: rgba(22, 225, 229, 0.08);
+      --text: #c4c4c8;
+      --text-bright: #ffffff;
+      --text-dim: #71717a;
+      
+      /* VS Code / Neovim 1:1 C Syntax Highlighting */
+      --tok-keyword: #c586c0;
+      --tok-type: #4ec9b0;
+      --tok-func: #dcdcaa;
+      --tok-string: #ce9178;
+      --tok-number: #b5cea8;
+      --tok-comment: #6a9955;
+      --tok-macro: #c586c0;
+      
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* Code Highlight Styles */
+    .tok-keyword { color: var(--tok-keyword); font-weight: 600; }
+    .tok-type { color: var(--tok-type); font-weight: 500; }
+    .tok-func { color: var(--tok-func); }
+    .tok-string { color: var(--tok-string); }
+    .tok-number { color: var(--tok-number); }
+    .tok-comment { color: var(--tok-comment); font-style: italic; }
+    .tok-macro { color: var(--tok-macro); font-weight: 600; }
+
+    /* Code Container */
+    .code-container {
+      background: #050505;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+    .code-header {
+      background: #0a0a0a;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+      background: var(--azure-dim);
+      border-color: var(--azure);
+      color: var(--azure);
+    }
+    .code-pre {
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-bright);
+    }
+
+    /* Headings */
+    h1 {
+      color: var(--text-bright);
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: -0.4px;
+    }
+    h2 {
+      color: var(--text-bright);
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      letter-spacing: -0.2px;
+    }
+    h3 {
+      color: #f4f4f5;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 22px;
+      margin-bottom: 8px;
+    }
+    p { margin-bottom: 14px; }
+    strong { color: var(--text-bright); }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    /* Inline Code */
+    p code, li code, td code {
+      background: #0a0a0a;
+      color: #f4f4f5;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    li { margin-bottom: 5px; }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #050505;
+    }
+    th {
+      background: #0a0a0a;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #141414;
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.01); }
+
+    /* Heading Anchor */
+    .heading-anchor {
+      color: var(--text-dim);
+      opacity: 0.3;
+      text-decoration: none;
+      margin-right: 6px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .heading-anchor:hover { opacity: 1; color: var(--azure); }
+
+    /* Anchors & Highlighting */
+    .anchor-target {
+      display: block;
+      position: relative;
+      top: -70px;
+      visibility: hidden;
+    }
+    .highlight-target {
+      animation: targetPulse 2s ease-out;
+    }
+    @keyframes targetPulse {
+      0% { background: rgba(22, 225, 229, 0.2) !important; outline: 1px solid var(--azure); border-radius: 4px; }
+      100% { background: transparent; }
+    }
+    
+
+    /* Page Layout */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #000000;
+    }
+    .site-header {
+      background: #000000;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #000000;
+      border: 1px solid var(--azure);
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .brand-badge span { color: var(--azure); }
+    .brand-text {
+      color: var(--text-bright);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .brand-text span {
+      color: var(--text-dim);
+      font-weight: 400;
+      font-size: 11px;
+      margin-left: 6px;
+    }
+    .header-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .header-nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .header-nav a:hover {
+      color: var(--azure);
+      border-color: var(--azure);
+    }
+
+    .main-body {
+      display: flex;
+      flex: 1;
+    }
+    .sidebar {
+      width: 250px;
+      background: #000000;
+      border-right: 1px solid var(--border);
+      padding: 12px 8px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      height: calc(100vh - 45px);
+      position: sticky;
+      top: 45px;
+    }
+    .sidebar-heading {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 10px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-bottom: 2px;
+      border-left: 2px solid transparent;
+      transition: all 0.1s ease;
+    }
+    .nav-item:hover {
+      background: var(--surface-hover);
+    }
+    .nav-item.active {
+      background: rgba(22, 225, 229, 0.04);
+      border-left-color: var(--azure);
+    }
+    .nav-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-title {
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .nav-sub {
+      font-size: 10px;
+      color: #52525b;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 32px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="site-header">
+      <a href="../index.html" class="brand-link">
+        <div class="brand-badge">C<span>+</span></div>
+        <div class="brand-text">Foundation Library <span>// Formal Manual</span></div>
+      </a>
+      <div class="header-nav">
+        <a href="../index.html">&larr; Telescope Search (/)</a>
+        <a href="https://github.com/IovAnto/Cplus-Lib" target="_blank">GitHub Repo</a>
+      </div>
+    </header>
+
+    <div class="main-body">
+      <aside class="sidebar">
+        <div class="sidebar-heading">18 Core Subsystems</div>
+        <a href="cp_core.html" class="nav-item "><span class="nav-title">cp_core</span><span class="nav-sub">Core Architecture</span></a>
+<a href="cp_mem.html" class="nav-item "><span class="nav-title">cp_mem</span><span class="nav-sub">Memory Subsystem</span></a>
+<a href="cp_str.html" class="nav-item active"><span class="nav-title">cp_str</span><span class="nav-sub">Strings & Builders</span></a>
+<a href="cp_fs.html" class="nav-item "><span class="nav-title">cp_fs</span><span class="nav-sub">Filesystem & IO</span></a>
+<a href="cp_ds.html" class="nav-item "><span class="nav-title">cp_ds</span><span class="nav-sub">Data Structures</span></a>
+<a href="cp_graph.html" class="nav-item "><span class="nav-title">cp_graph</span><span class="nav-sub">Graphs & Paths</span></a>
+<a href="cp_algo.html" class="nav-item "><span class="nav-title">cp_algo</span><span class="nav-sub">Algorithms & Sorting</span></a>
+<a href="cp_math.html" class="nav-item "><span class="nav-title">cp_math</span><span class="nav-sub">SIMD & Fast Math</span></a>
+<a href="cp_thread.html" class="nav-item "><span class="nav-title">cp_thread</span><span class="nav-sub">Concurrency & Workers</span></a>
+<a href="cp_net.html" class="nav-item "><span class="nav-title">cp_net</span><span class="nav-sub">High-Performance Net</span></a>
+<a href="cp_tui.html" class="nav-item "><span class="nav-title">cp_tui</span><span class="nav-sub">Terminal UI & Telemetry</span></a>
+<a href="cp_hash.html" class="nav-item "><span class="nav-title">cp_hash</span><span class="nav-sub">Cryptographic Hashes</span></a>
+<a href="cp_map.html" class="nav-item "><span class="nav-title">cp_map</span><span class="nav-sub">Hash Maps & Sets</span></a>
+<a href="cp_args.html" class="nav-item "><span class="nav-title">cp_args</span><span class="nav-sub">CLI Argument Parser</span></a>
+<a href="cp_time.html" class="nav-item "><span class="nav-title">cp_time</span><span class="nav-sub">Precision Clocks</span></a>
+<a href="cp_json.html" class="nav-item "><span class="nav-title">cp_json</span><span class="nav-sub">Streaming JSON Engine</span></a>
+<a href="cp_stack.html" class="nav-item "><span class="nav-title">cp_stack</span><span class="nav-sub">Cache-Friendly Stack</span></a>
+<a href="cp_os.html" class="nav-item "><span class="nav-title">cp_os</span><span class="nav-sub">Platform Subsystem</span></a>
+      </aside>
+
+      <main class="content-area">
+        <span id="module" class="anchor-target"></span><span id="specification" class="anchor-target"></span><span id="cp_str" class="anchor-target"></span><span id="strings" class="anchor-target"></span><span id="slices" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="base64" class="anchor-target"></span><h1 id="module-specification-cp-str-strings-slices-amp-base64"><a href="#module-specification-cp-str-strings-slices-amp-base64" class="heading-anchor">#</a> Module Specification: cp_str (Strings, Slices &amp; Base64)</h1>
+<h2 id="1-tl-dr"><a href="#1-tl-dr" class="heading-anchor">#</a> 1. TL;DR</h2>
+<p>The <code>cp_str</code> module provides zero-allocation immutable string slices (<code>StrView</code>), Arena-backed dynamic string builders (<code>String</code>), and RFC 4648 Base64 encoding/decoding.</p>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-comment">/* Zero-Allocation String Slices */</span>
+<span class="tok-func">StrView</span> full = <span class="tok-func">S</span>(<span class="tok-string">&quot;  GET /api/v1/telemetry HTTP/1.1  &quot;</span>);
+<span class="tok-func">StrView</span> trimmed = <span class="tok-func">StrTrim</span>(full);
+assert(<span class="tok-func">StrStartsWith</span>(trimmed, <span class="tok-func">S</span>(<span class="tok-string">&quot;GET&quot;</span>)));
+
+<span class="tok-comment">/* Arena-Backed String Formatting */</span>
+<span class="tok-type">TempArena</span> scratch = <span class="tok-func">ScratchBegin</span>();
+<span class="tok-type">String</span> s = <span class="tok-func">StrFormat</span>(scratch.arena, <span class="tok-string">&quot;Host: %s, Port: %d&quot;</span>, <span class="tok-string">&quot;127.0.0.1&quot;</span>, <span class="tok-number">8080</span>);
+printf(<span class="tok-string">&quot;%s\n&quot;</span>, s.data);
+<span class="tok-func">ScratchEnd</span>(scratch);</code></pre></div>
+<hr />
+<span id="formal" class="anchor-target"></span><span id="definitions" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="internal" class="anchor-target"></span><span id="architecture" class="anchor-target"></span><h2 id="2-formal-definitions-amp-internal-architecture"><a href="#2-formal-definitions-amp-internal-architecture" class="heading-anchor">#</a> 2. Formal Definitions &amp; Internal Architecture</h2>
+<span id="struct" class="anchor-target"></span><span id="layout" class="anchor-target"></span><span id="strview" class="anchor-target"></span><span id="cp_strview_t" class="anchor-target"></span><h3 id="2-1-struct-layout-strview-cp-strview-t"><a href="#2-1-struct-layout-strview-cp-strview-t" class="heading-anchor">#</a> 2.1 Struct Layout: <code>StrView</code> (<code>cp_strview_t</code>)</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> cp_strview {
+    <span class="tok-keyword">const</span> <span class="tok-type">char</span> *data;
+    <span class="tok-type">usize</span> len;
+} <span class="tok-func">StrView</span>;</code></pre></div>
+<ul>
+<li><strong>Borrowing Semantics</strong>: Stores an immutable pointer and byte count. Operations like <code>StrSub</code>, <code>StrTrim</code>, and <code>StrTrimLeft</code> simply increment <code>data</code> and adjust <code>len</code>, never allocating heap memory or copying bytes.</li>
+<li><strong>Literal Macro <code>S()</code></strong>: <code>S("literal")</code> evaluates <code>sizeof("literal") - 1</code> at compile-time, setting <code>len</code> with 0 runtime <code>strlen()</code> calls.</li>
+</ul>
+<span id="struct" class="anchor-target"></span><span id="layout" class="anchor-target"></span><span id="string" class="anchor-target"></span><span id="cp_string_t" class="anchor-target"></span><h3 id="2-2-struct-layout-string-cp-string-t"><a href="#2-2-struct-layout-string-cp-string-t" class="heading-anchor">#</a> 2.2 Struct Layout: <code>String</code> (<code>cp_string_t</code>)</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> cp_string {
+    <span class="tok-type">char</span> *data;
+    <span class="tok-type">usize</span> len;
+    <span class="tok-type">usize</span> cap;
+    <span class="tok-type">cp_arena_t</span> *arena;
+} <span class="tok-type">String</span>;</code></pre></div>
+<ul>
+<li>A mutable string builder backed by an <code>Arena</code>. Maintains explicit length while guaranteeing null-termination at <code>data[len] = '\0'</code> for seamless interop with standard C libc functions.</li>
+</ul>
+<hr />
+<span id="operational" class="anchor-target"></span><span id="guarantees" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="contracts" class="anchor-target"></span><h2 id="3-operational-guarantees-amp-contracts"><a href="#3-operational-guarantees-amp-contracts" class="heading-anchor">#</a> 3. Operational Guarantees &amp; Contracts</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>StrView</th>
+<th>String Builder</th>
+<th>Base64 Engine</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sub-Slice / Trim</strong></td>
+<td>$O(1)$ zero-allocation</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><strong>Append / Format</strong></td>
+<td>N/A</td>
+<td>$O(1)$ amortized (on Arena)</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><strong>Encode / Decode</strong></td>
+<td>N/A</td>
+<td>N/A</td>
+<td>$O(N)$ linear time</td>
+</tr>
+<tr>
+<td><strong>Heap Allocations</strong></td>
+<td>0 bytes (borrows memory)</td>
+<td>0 heap calls (Arena-backed)</td>
+<td>0 heap calls (user buffer)</td>
+</tr>
+<tr>
+<td><strong>Thread-Safety</strong></td>
+<td>Safe for concurrent reads</td>
+<td>Thread-confined</td>
+<td>Pure reentrant functions</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="api" class="anchor-target"></span><span id="matrix" class="anchor-target"></span><h2 id="4-api-matrix"><a href="#4-api-matrix" class="heading-anchor">#</a> 4. API Matrix</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>PascalCase Macro</th>
+<th>Dot-Notation API</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Literal Slice</td>
+<td><code>S("literal")</code></td>
+<td>N/A</td>
+<td>Compile-time StrView constructor</td>
+</tr>
+<tr>
+<td>Slice from C-Str</td>
+<td><span id="strfromc" class="anchor-target"></span><code>StrFromC(cstr)</code></td>
+<td><span id="fromc" class="anchor-target"></span><code>str.fromC(cstr)</code></td>
+<td>Create StrView from null-terminated char*</td>
+</tr>
+<tr>
+<td>Substring</td>
+<td><span id="strsub" class="anchor-target"></span><code>StrSub(sv, start, len)</code></td>
+<td><span id="sub" class="anchor-target"></span><code>str.sub(sv, start, len)</code></td>
+<td>Slice substring in O(1)</td>
+</tr>
+<tr>
+<td>Trim Whitespace</td>
+<td><span id="strtrim" class="anchor-target"></span><code>StrTrim(sv)</code></td>
+<td><span id="trim" class="anchor-target"></span><code>str.trim(sv)</code></td>
+<td>Strip leading and trailing whitespace</td>
+</tr>
+<tr>
+<td>Equals Check</td>
+<td><span id="strequals" class="anchor-target"></span><code>StrEquals(a, b)</code></td>
+<td><span id="equals" class="anchor-target"></span><code>str.equals(a, b)</code></td>
+<td>Constant-time slice equality check</td>
+</tr>
+<tr>
+<td>Starts With</td>
+<td><span id="strstartswith" class="anchor-target"></span><code>StrStartsWith(sv, pre)</code></td>
+<td><span id="startswith" class="anchor-target"></span><code>str.startsWith(sv, pre)</code></td>
+<td>Prefix verification</td>
+</tr>
+<tr>
+<td>Ends With</td>
+<td><span id="strendswith" class="anchor-target"></span><code>StrEndsWith(sv, suf)</code></td>
+<td><span id="endswith" class="anchor-target"></span><code>str.endsWith(sv, suf)</code></td>
+<td>Suffix verification</td>
+</tr>
+<tr>
+<td>Find Substring</td>
+<td><span id="strfind" class="anchor-target"></span><code>StrFind(sv, needle)</code></td>
+<td><span id="find" class="anchor-target"></span><code>str.find(sv, needle)</code></td>
+<td>Search needle, return byte offset (-1 if none)</td>
+</tr>
+<tr>
+<td>Split on Arena</td>
+<td><span id="strsplitarena" class="anchor-target"></span><code>StrSplitArena(sv, d, a, cnt)</code></td>
+<td><span id="split" class="anchor-target"></span><code>str.split(sv, d, a, cnt)</code></td>
+<td>Split into StrView array on Arena</td>
+</tr>
+<tr>
+<td>New String</td>
+<td><span id="strnew" class="anchor-target"></span><code>StrNew(arena, cap)</code></td>
+<td><span id="new" class="anchor-target"></span><code>str.new(arena, cap)</code></td>
+<td>Create empty mutable string builder</td>
+</tr>
+<tr>
+<td>String Length</td>
+<td><span id="strlen" class="anchor-target"></span><code>StrLen(str)</code></td>
+<td><span id="len" class="anchor-target"></span><code>str.len(str)</code></td>
+<td>Current length of String builder</td>
+</tr>
+<tr>
+<td>Append Slice</td>
+<td><span id="strappend" class="anchor-target"></span><code>StrAppend(str, sv)</code></td>
+<td><span id="append" class="anchor-target"></span><code>str.append(str, sv)</code></td>
+<td>Append StrView to String builder</td>
+</tr>
+<tr>
+<td>Append C-Str</td>
+<td><span id="strappendc" class="anchor-target"></span><code>StrAppendC(str, cstr)</code></td>
+<td><span id="appendc" class="anchor-target"></span><code>str.appendC(str, cstr)</code></td>
+<td>Append null-terminated string</td>
+</tr>
+<tr>
+<td>Format String</td>
+<td><span id="strformat" class="anchor-target"></span><code>StrFormat(arena, fmt, ...)</code></td>
+<td><span id="format" class="anchor-target"></span><code>str.format(...)</code></td>
+<td>vsnprintf directly into Arena memory</td>
+</tr>
+<tr>
+<td>Scratch Format</td>
+<td><span id="strformatscratch" class="anchor-target"></span><code>StrFormatScratch(fmt, ...)</code></td>
+<td>N/A</td>
+<td>Temporary format on thread-local scratch</td>
+</tr>
+<tr>
+<td>Base64 Encode</td>
+<td><span id="base64encode" class="anchor-target"></span><code>Base64Encode(src, len, dst, cap)</code></td>
+<td><span id="base64encode" class="anchor-target"></span><code>str.base64Encode(...)</code></td>
+<td>RFC 4648 Base64 encoder</td>
+</tr>
+<tr>
+<td>Base64 Decode</td>
+<td><span id="base64decode" class="anchor-target"></span><code>Base64Decode(src, len, dst, cap)</code></td>
+<td><span id="base64decode" class="anchor-target"></span><code>str.base64Decode(...)</code></td>
+<td>RFC 4648 Base64 decoder</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="use" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="5-use-cases"><a href="#5-use-cases" class="heading-anchor">#</a> 5. Use Cases</h2>
+<ol>
+<li><strong>Zero-Copy HTTP/Protocol Parsing</strong>: Tokenize request headers directly into <code>StrView</code> slices without copying header bytes.</li>
+<li><strong>Log Formatting</strong>: Build log lines into a thread-local scratch string using <code>StrFormatScratch</code>.</li>
+<li><strong>Data Serialization</strong>: Encode raw binary telemetry into Base64 for JSON transmission.</li>
+</ol>
+<hr />
+<span id="complete" class="anchor-target"></span><span id="c11" class="anchor-target"></span><span id="usage" class="anchor-target"></span><span id="examples" class="anchor-target"></span><h2 id="6-complete-c11-usage-examples"><a href="#6-complete-c11-usage-examples" class="heading-anchor">#</a> 6. Complete C11 Usage Examples</h2>
+<span id="example" class="anchor-target"></span><span id="url" class="anchor-target"></span><span id="query" class="anchor-target"></span><span id="string" class="anchor-target"></span><span id="tokenizer" class="anchor-target"></span><h3 id="example-url-query-string-tokenizer"><a href="#example-url-query-string-tokenizer" class="heading-anchor">#</a> Example: URL Query String Tokenizer</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-keyword">void</span> parse_query_params(<span class="tok-func">StrView</span> query) {
+    <span class="tok-type">TempArena</span> scratch = <span class="tok-func">ScratchBegin</span>();
+    
+    <span class="tok-type">usize</span> pair_count = <span class="tok-number">0</span>;
+    <span class="tok-func">StrView</span> *pairs = <span class="tok-func">StrSplitArena</span>(query, <span class="tok-string">&#x27;&amp;&#x27;</span>, scratch.arena, &amp;pair_count);
+    
+    <span class="tok-keyword">for</span> (<span class="tok-type">usize</span> i = <span class="tok-number">0</span>; i &lt; pair_count; i++) {
+        <span class="tok-type">isize</span> eq_pos = <span class="tok-func">StrFindChar</span>(pairs[i], <span class="tok-string">&#x27;=&#x27;</span>);
+        <span class="tok-keyword">if</span> (eq_pos &gt; <span class="tok-number">0</span>) {
+            <span class="tok-func">StrView</span> key = <span class="tok-func">StrSub</span>(pairs[i], <span class="tok-number">0</span>, (<span class="tok-type">usize</span>)eq_pos);
+            <span class="tok-func">StrView</span> val = <span class="tok-func">StrSub</span>(pairs[i], (<span class="tok-type">usize</span>)eq_pos + <span class="tok-number">1</span>, pairs[i].len - (<span class="tok-type">usize</span>)eq_pos - <span class="tok-number">1</span>);
+            printf(<span class="tok-string">&quot;Param [%.*s] = [%.*s]\n&quot;</span>, (<span class="tok-type">int</span>)key.len, key.data, (<span class="tok-type">int</span>)val.len, val.data);
+        }
+    }
+    
+    <span class="tok-func">ScratchEnd</span>(scratch);
+}</code></pre></div>
+<hr />
+<span id="limitations" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="operational" class="anchor-target"></span><span id="constraints" class="anchor-target"></span><h2 id="7-limitations-amp-operational-constraints"><a href="#7-limitations-amp-operational-constraints" class="heading-anchor">#</a> 7. Limitations &amp; Operational Constraints</h2>
+<ul>
+<li><strong>Null-Termination of <code>StrView</code></strong>: A <code>StrView</code> slice is <strong>not</strong> guaranteed to be null-terminated (e.g. after <code>StrSub</code> or <code>StrTrim</code>). When passing a <code>StrView</code> to <code>printf</code>, use the <code>%.*s</code> precision specifier (<code>printf("%.*s", (int)sv.len, sv.data)</code>). If you require a null-terminated string, use <code>String</code> or <code>StrFromParts</code>.</li>
+<li><strong>Base64 Buffer Sizing</strong>: The destination buffer for <code>Base64Encode</code> must be at least <code>4 * ((src_len + 2) / 3) + 1</code> bytes to hold the encoded output and trailing null byte.</li>
+</ul>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.borderColor = 'var(--azure)';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.borderColor = '';
+        }, 1500);
+      });
+    }
+
+    function scrollToAnchor() {
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+      const cleanHash = decodeURIComponent(rawHash).toLowerCase().replace(/[^a-z0-9_]/g, '');
+      let target = document.getElementById(rawHash) || document.getElementById(cleanHash);
+      if (!target) {
+        const candidates = document.querySelectorAll('h1, h2, h3, h4, td, code, th, span[id]');
+        for (const el of candidates) {
+          const id = (el.id || '').toLowerCase();
+          const text = (el.textContent || '').toLowerCase();
+          if (id === cleanHash || id.includes(cleanHash) || text.includes(cleanHash)) {
+            target = el.closest('tr') || el;
+            break;
+          }
+        }
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-target');
+        setTimeout(() => { target.classList.remove('highlight-target'); }, 2500);
+      }
+    }
+    window.addEventListener('DOMContentLoaded', scrollToAnchor);
+    window.addEventListener('hashchange', scrollToAnchor);
+  </script>
+</body>
+</html>

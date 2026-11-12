@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C+ Manual // Streaming JSON Engine (cp_json)</title>
+  <style>
+    
+    :root {
+      --bg: #000000;
+      --bg-dark: #050505;
+      --surface: #0a0a0a;
+      --surface-hover: #121214;
+      --border: #1a1a1a;
+      --border-bright: #27272a;
+      --azure: #16e1e5;
+      --azure-dim: rgba(22, 225, 229, 0.08);
+      --text: #c4c4c8;
+      --text-bright: #ffffff;
+      --text-dim: #71717a;
+      
+      /* VS Code / Neovim 1:1 C Syntax Highlighting */
+      --tok-keyword: #c586c0;
+      --tok-type: #4ec9b0;
+      --tok-func: #dcdcaa;
+      --tok-string: #ce9178;
+      --tok-number: #b5cea8;
+      --tok-comment: #6a9955;
+      --tok-macro: #c586c0;
+      
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* Code Highlight Styles */
+    .tok-keyword { color: var(--tok-keyword); font-weight: 600; }
+    .tok-type { color: var(--tok-type); font-weight: 500; }
+    .tok-func { color: var(--tok-func); }
+    .tok-string { color: var(--tok-string); }
+    .tok-number { color: var(--tok-number); }
+    .tok-comment { color: var(--tok-comment); font-style: italic; }
+    .tok-macro { color: var(--tok-macro); font-weight: 600; }
+
+    /* Code Container */
+    .code-container {
+      background: #050505;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+    .code-header {
+      background: #0a0a0a;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+      background: var(--azure-dim);
+      border-color: var(--azure);
+      color: var(--azure);
+    }
+    .code-pre {
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-bright);
+    }
+
+    /* Headings */
+    h1 {
+      color: var(--text-bright);
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: -0.4px;
+    }
+    h2 {
+      color: var(--text-bright);
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      letter-spacing: -0.2px;
+    }
+    h3 {
+      color: #f4f4f5;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 22px;
+      margin-bottom: 8px;
+    }
+    p { margin-bottom: 14px; }
+    strong { color: var(--text-bright); }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    /* Inline Code */
+    p code, li code, td code {
+      background: #0a0a0a;
+      color: #f4f4f5;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    li { margin-bottom: 5px; }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #050505;
+    }
+    th {
+      background: #0a0a0a;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #141414;
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.01); }
+
+    /* Heading Anchor */
+    .heading-anchor {
+      color: var(--text-dim);
+      opacity: 0.3;
+      text-decoration: none;
+      margin-right: 6px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .heading-anchor:hover { opacity: 1; color: var(--azure); }
+
+    /* Anchors & Highlighting */
+    .anchor-target {
+      display: block;
+      position: relative;
+      top: -70px;
+      visibility: hidden;
+    }
+    .highlight-target {
+      animation: targetPulse 2s ease-out;
+    }
+    @keyframes targetPulse {
+      0% { background: rgba(22, 225, 229, 0.2) !important; outline: 1px solid var(--azure); border-radius: 4px; }
+      100% { background: transparent; }
+    }
+    
+
+    /* Page Layout */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #000000;
+    }
+    .site-header {
+      background: #000000;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #000000;
+      border: 1px solid var(--azure);
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .brand-badge span { color: var(--azure); }
+    .brand-text {
+      color: var(--text-bright);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .brand-text span {
+      color: var(--text-dim);
+      font-weight: 400;
+      font-size: 11px;
+      margin-left: 6px;
+    }
+    .header-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .header-nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .header-nav a:hover {
+      color: var(--azure);
+      border-color: var(--azure);
+    }
+
+    .main-body {
+      display: flex;
+      flex: 1;
+    }
+    .sidebar {
+      width: 250px;
+      background: #000000;
+      border-right: 1px solid var(--border);
+      padding: 12px 8px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      height: calc(100vh - 45px);
+      position: sticky;
+      top: 45px;
+    }
+    .sidebar-heading {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 10px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-bottom: 2px;
+      border-left: 2px solid transparent;
+      transition: all 0.1s ease;
+    }
+    .nav-item:hover {
+      background: var(--surface-hover);
+    }
+    .nav-item.active {
+      background: rgba(22, 225, 229, 0.04);
+      border-left-color: var(--azure);
+    }
+    .nav-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-title {
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .nav-sub {
+      font-size: 10px;
+      color: #52525b;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 32px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="site-header">
+      <a href="../index.html" class="brand-link">
+        <div class="brand-badge">C<span>+</span></div>
+        <div class="brand-text">Foundation Library <span>// Formal Manual</span></div>
+      </a>
+      <div class="header-nav">
+        <a href="../index.html">&larr; Telescope Search (/)</a>
+        <a href="https://github.com/IovAnto/Cplus-Lib" target="_blank">GitHub Repo</a>
+      </div>
+    </header>
+
+    <div class="main-body">
+      <aside class="sidebar">
+        <div class="sidebar-heading">18 Core Subsystems</div>
+        <a href="cp_core.html" class="nav-item "><span class="nav-title">cp_core</span><span class="nav-sub">Core Architecture</span></a>
+<a href="cp_mem.html" class="nav-item "><span class="nav-title">cp_mem</span><span class="nav-sub">Memory Subsystem</span></a>
+<a href="cp_str.html" class="nav-item "><span class="nav-title">cp_str</span><span class="nav-sub">Strings & Builders</span></a>
+<a href="cp_fs.html" class="nav-item "><span class="nav-title">cp_fs</span><span class="nav-sub">Filesystem & IO</span></a>
+<a href="cp_ds.html" class="nav-item "><span class="nav-title">cp_ds</span><span class="nav-sub">Data Structures</span></a>
+<a href="cp_graph.html" class="nav-item "><span class="nav-title">cp_graph</span><span class="nav-sub">Graphs & Paths</span></a>
+<a href="cp_algo.html" class="nav-item "><span class="nav-title">cp_algo</span><span class="nav-sub">Algorithms & Sorting</span></a>
+<a href="cp_math.html" class="nav-item "><span class="nav-title">cp_math</span><span class="nav-sub">SIMD & Fast Math</span></a>
+<a href="cp_thread.html" class="nav-item "><span class="nav-title">cp_thread</span><span class="nav-sub">Concurrency & Workers</span></a>
+<a href="cp_net.html" class="nav-item "><span class="nav-title">cp_net</span><span class="nav-sub">High-Performance Net</span></a>
+<a href="cp_tui.html" class="nav-item "><span class="nav-title">cp_tui</span><span class="nav-sub">Terminal UI & Telemetry</span></a>
+<a href="cp_hash.html" class="nav-item "><span class="nav-title">cp_hash</span><span class="nav-sub">Cryptographic Hashes</span></a>
+<a href="cp_map.html" class="nav-item "><span class="nav-title">cp_map</span><span class="nav-sub">Hash Maps & Sets</span></a>
+<a href="cp_args.html" class="nav-item "><span class="nav-title">cp_args</span><span class="nav-sub">CLI Argument Parser</span></a>
+<a href="cp_time.html" class="nav-item "><span class="nav-title">cp_time</span><span class="nav-sub">Precision Clocks</span></a>
+<a href="cp_json.html" class="nav-item active"><span class="nav-title">cp_json</span><span class="nav-sub">Streaming JSON Engine</span></a>
+<a href="cp_stack.html" class="nav-item "><span class="nav-title">cp_stack</span><span class="nav-sub">Cache-Friendly Stack</span></a>
+<a href="cp_os.html" class="nav-item "><span class="nav-title">cp_os</span><span class="nav-sub">Platform Subsystem</span></a>
+      </aside>
+
+      <main class="content-area">
+        <span id="module" class="anchor-target"></span><span id="specification" class="anchor-target"></span><span id="cp_json" class="anchor-target"></span><span id="micro" class="anchor-target"></span><span id="json" class="anchor-target"></span><span id="parser" class="anchor-target"></span><span id="subsystem" class="anchor-target"></span><h1 id="module-specification-cp-json-micro-json-parser-subsystem"><a href="#module-specification-cp-json-micro-json-parser-subsystem" class="heading-anchor">#</a> Module Specification: cp_json (Micro JSON Parser Subsystem)</h1>
+<h2 id="1-tl-dr"><a href="#1-tl-dr" class="heading-anchor">#</a> 1. TL;DR</h2>
+<p>The <code>cp_json</code> subsystem is an in-situ, zero-allocation micro JSON parser compliant with RFC 8259. It navigates JSON payloads by returning <code>StrView</code> non-owning string slices without performing heap allocations or mutating the input buffer.</p>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-keyword">const</span> <span class="tok-type">char</span> *payload = <span class="tok-string">&quot;{\&quot;</span>status\<span class="tok-string">&quot;:200,\&quot;</span>success\<span class="tok-string">&quot;:true,\&quot;</span>nodes\<span class="tok-string">&quot;:[\&quot;</span>srv-<span class="tok-number">1</span>\<span class="tok-string">&quot;,\&quot;</span>srv-<span class="tok-number">2</span>\<span class="tok-string">&quot;]}&quot;</span>;
+<span class="tok-type">cp_json_val_t</span> root = <span class="tok-func">JsonParse</span>(payload, strlen(payload));
+
+<span class="tok-type">i64</span> status = <span class="tok-func">JsonAsInt</span>(<span class="tok-func">JsonGet</span>(root, <span class="tok-string">&quot;status&quot;</span>), <span class="tok-number">0</span>);           <span class="tok-comment">// 200</span>
+<span class="tok-type">bool</span> ok = <span class="tok-func">JsonAsBool</span>(<span class="tok-func">JsonGet</span>(root, <span class="tok-string">&quot;success&quot;</span>), <span class="tok-type">false</span>);        <span class="tok-comment">// true</span>
+
+<span class="tok-type">cp_json_val_t</span> nodes = <span class="tok-func">JsonGet</span>(root, <span class="tok-string">&quot;nodes&quot;</span>);
+<span class="tok-type">usize</span> count = <span class="tok-func">JsonLen</span>(nodes);                                 <span class="tok-comment">// 2</span>
+<span class="tok-func">StrView</span> first_node = <span class="tok-func">JsonAsView</span>(<span class="tok-func">JsonAt</span>(nodes, <span class="tok-number">0</span>));            <span class="tok-comment">// &quot;srv-1&quot;</span></code></pre></div>
+<hr />
+<span id="formal" class="anchor-target"></span><span id="definitions" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="internal" class="anchor-target"></span><span id="architecture" class="anchor-target"></span><h2 id="2-formal-definitions-amp-internal-architecture"><a href="#2-formal-definitions-amp-internal-architecture" class="heading-anchor">#</a> 2. Formal Definitions &amp; Internal Architecture</h2>
+<span id="types" class="anchor-target"></span><span id="and" class="anchor-target"></span><span id="data" class="anchor-target"></span><span id="structures" class="anchor-target"></span><h3 id="2-1-types-and-data-structures"><a href="#2-1-types-and-data-structures" class="heading-anchor">#</a> 2.1 Types and Data Structures</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">enum</span> {
+    <span class="tok-func">CP_JSON_INVALID</span> = <span class="tok-number">0</span>,
+    <span class="tok-func">CP_JSON_NULL</span>,
+    <span class="tok-func">CP_JSON_BOOL</span>,
+    <span class="tok-func">CP_JSON_NUMBER</span>,
+    <span class="tok-func">CP_JSON_STRING</span>,
+    <span class="tok-func">CP_JSON_ARRAY</span>,
+    <span class="tok-func">CP_JSON_OBJECT</span>
+} <span class="tok-type">cp_json_type_t</span>;
+
+<span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> {
+    <span class="tok-func">StrView</span> raw;
+    <span class="tok-type">cp_json_type_t</span> type;
+} <span class="tok-type">cp_json_val_t</span>;</code></pre></div>
+<span id="memory" class="anchor-target"></span><span id="model" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="traversal" class="anchor-target"></span><h3 id="2-2-memory-model-amp-traversal"><a href="#2-2-memory-model-amp-traversal" class="heading-anchor">#</a> 2.2 Memory Model &amp; Traversal</h3>
+<ul>
+<li><strong>Zero Allocations</strong>: <code>cp_json_val_t</code> references a slice of the original buffer via <code>StrView</code> (<code>const char *data</code>, <code>usize len</code>). No memory is allocated on the heap or arena during parsing.</li>
+<li><strong>In-Situ Tokenization</strong>: <code>cp_json_parse</code> validates syntactic boundaries (braces, brackets, quotes, numbers) and detects root element types in a single linear pass.</li>
+<li><strong>Key &amp; Index Traversal</strong>:</li>
+<li><code>JsonGet(obj, key)</code> scans keys within JSON object <code>{ ... }</code>, skipping nested container levels by tracking structural balance counters <code>{}</code>, <code>[]</code>, and quotes.</li>
+<li><code>JsonAt(arr, index)</code> steps through array elements <code>[ ... ]</code> using structural delimiter commas <code>,</code> until the target index is reached.</li>
+<li><strong>Conversion Primitives</strong>:</li>
+<li><code>JsonAsView</code>: Strips enclosing quote delimiters for strings or returns raw numeric/literal slices.</li>
+<li><code>JsonAsInt</code> / <code>JsonAsFloat</code>: Parses integer or floating point values directly from the underlying byte slice.</li>
+<li><code>JsonAsBool</code>: Checks slice against literal <code>"true"</code>.</li>
+</ul>
+<hr />
+<span id="operational" class="anchor-target"></span><span id="guarantees" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="contracts" class="anchor-target"></span><h2 id="3-operational-guarantees-amp-contracts"><a href="#3-operational-guarantees-amp-contracts" class="heading-anchor">#</a> 3. Operational Guarantees &amp; Contracts</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time Complexity</th>
+<th>Auxiliary Memory</th>
+<th>Heap Allocations</th>
+<th>Input Mutation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span id="jsonparse" class="anchor-target"></span><code>JsonParse</code></td>
+<td>$O(1)$ root detection</td>
+<td>0 bytes</td>
+<td>0</td>
+<td>None (read-only)</td>
+</tr>
+<tr>
+<td><span id="jsonget" class="anchor-target"></span><code>JsonGet</code></td>
+<td>$O(N)$ key scan</td>
+<td>0 bytes</td>
+<td>0</td>
+<td>None (read-only)</td>
+</tr>
+<tr>
+<td><span id="jsonat" class="anchor-target"></span><code>JsonAt</code></td>
+<td>$O(K)$ index scan</td>
+<td>0 bytes</td>
+<td>0</td>
+<td>None (read-only)</td>
+</tr>
+<tr>
+<td><span id="jsonlen" class="anchor-target"></span><code>JsonLen</code></td>
+<td>$O(N)$ container scan</td>
+<td>0 bytes</td>
+<td>0</td>
+<td>None (read-only)</td>
+</tr>
+<tr>
+<td><code>JsonAsInt</code> / <code>Float</code></td>
+<td>$O(D)$ digit count</td>
+<td>0 bytes</td>
+<td>0</td>
+<td>None (read-only)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="api" class="anchor-target"></span><span id="matrix" class="anchor-target"></span><h2 id="4-api-matrix"><a href="#4-api-matrix" class="heading-anchor">#</a> 4. API Matrix</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>PascalCase Macro</th>
+<th>Dot-Notation API</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Parse JSON</td>
+<td><span id="jsonparse" class="anchor-target"></span><code>JsonParse(str, len)</code></td>
+<td><span id="parse" class="anchor-target"></span><code>json_api.parse(str, len)</code></td>
+<td>Parse JSON buffer into root <code>cp_json_val_t</code></td>
+</tr>
+<tr>
+<td>Get Key Value</td>
+<td><span id="jsonget" class="anchor-target"></span><code>JsonGet(obj, key)</code></td>
+<td><span id="get" class="anchor-target"></span><code>json_api.get(obj, key)</code></td>
+<td>Query member of JSON object by key name</td>
+</tr>
+<tr>
+<td>Get Array Item</td>
+<td><span id="jsonat" class="anchor-target"></span><code>JsonAt(arr, index)</code></td>
+<td><span id="at" class="anchor-target"></span><code>json_api.at(arr, index)</code></td>
+<td>Retrieve element at 0-based index from array</td>
+</tr>
+<tr>
+<td>Container Length</td>
+<td><span id="jsonlen" class="anchor-target"></span><code>JsonLen(val)</code></td>
+<td><span id="len" class="anchor-target"></span><code>json_api.len(val)</code></td>
+<td>Count elements in JSON object or array</td>
+</tr>
+<tr>
+<td>Unquote View</td>
+<td><span id="jsonasview" class="anchor-target"></span><code>JsonAsView(val)</code></td>
+<td><span id="asview" class="anchor-target"></span><code>json_api.asView(val)</code></td>
+<td>Return unquoted <code>StrView</code> string slice</td>
+</tr>
+<tr>
+<td>Read Integer</td>
+<td><span id="jsonasint" class="anchor-target"></span><code>JsonAsInt(val, def)</code></td>
+<td><span id="asint" class="anchor-target"></span><code>json_api.asInt(val, def)</code></td>
+<td>Convert numeric node to <code>i64</code> with fallback</td>
+</tr>
+<tr>
+<td>Read Float</td>
+<td><span id="jsonasfloat" class="anchor-target"></span><code>JsonAsFloat(val, def)</code></td>
+<td><span id="asfloat" class="anchor-target"></span><code>json_api.asFloat(val, def)</code></td>
+<td>Convert numeric node to <code>f64</code> with fallback</td>
+</tr>
+<tr>
+<td>Read Boolean</td>
+<td><span id="jsonasbool" class="anchor-target"></span><code>JsonAsBool(val, def)</code></td>
+<td><span id="asbool" class="anchor-target"></span><code>json_api.asBool(val, def)</code></td>
+<td>Convert boolean node to <code>bool</code> with fallback</td>
+</tr>
+<tr>
+<td>Check Null</td>
+<td><span id="jsonisnull" class="anchor-target"></span><code>JsonIsNull(val)</code></td>
+<td><span id="isnull" class="anchor-target"></span><code>json_api.isNull(val)</code></td>
+<td>Check if node represents JSON <code>null</code></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="use" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="5-use-cases"><a href="#5-use-cases" class="heading-anchor">#</a> 5. Use Cases</h2>
+<ol>
+<li><strong>REST API Response Inspection</strong>: Extract configuration parameters, bearer tokens, or error status codes directly from HTTP response payloads.</li>
+<li><strong>Embedded Config Files</strong>: Read application configuration schemas in JSON format without dragging in bloated multi-megabyte C++ parsing libraries.</li>
+<li><strong>Telemetry &amp; Log Querying</strong>: Fast-path inspection of structured JSON log records over high-bandwidth TCP streams.</li>
+</ol>
+<hr />
+<span id="complete" class="anchor-target"></span><span id="compilable" class="anchor-target"></span><span id="example" class="anchor-target"></span><h2 id="6-complete-compilable-example"><a href="#6-complete-compilable-example" class="heading-anchor">#</a> 6. Complete Compilable Example</h2>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+<span class="tok-macro">#include</span> <span class="tok-string">&lt;stdio.h&gt;</span>
+<span class="tok-macro">#include</span> <span class="tok-string">&lt;assert.h&gt;</span>
+
+<span class="tok-type">int</span> main(<span class="tok-keyword">void</span>) {
+    <span class="tok-keyword">const</span> <span class="tok-type">char</span> *payload = 
+        <span class="tok-string">&quot;{\n&quot;</span>
+        <span class="tok-string">&quot;  \&quot;</span>host\<span class="tok-string">&quot;: \&quot;</span>api.internal.net\<span class="tok-string">&quot;,\n&quot;</span>
+        <span class="tok-string">&quot;  \&quot;</span>port\<span class="tok-string">&quot;: 8443,\n&quot;</span>
+        <span class="tok-string">&quot;  \&quot;</span>tls\<span class="tok-string">&quot;: true,\n&quot;</span>
+        <span class="tok-string">&quot;  \&quot;</span>replicas\<span class="tok-string">&quot;: [\&quot;</span>node-a\<span class="tok-string">&quot;, \&quot;</span>node-b\<span class="tok-string">&quot;, \&quot;</span>node-c\<span class="tok-string">&quot;]\n&quot;</span>
+        <span class="tok-string">&quot;}&quot;</span>;
+
+    <span class="tok-type">cp_json_val_t</span> root = json_api.parse(payload, strlen(payload));
+    assert(root.type == <span class="tok-func">CP_JSON_OBJECT</span>);
+
+    <span class="tok-comment">/* Query object fields */</span>
+    <span class="tok-type">cp_json_val_t</span> host_val = json_api.get(root, <span class="tok-string">&quot;host&quot;</span>);
+    <span class="tok-func">StrView</span> host_sv = json_api.asView(host_val);
+    assert(<span class="tok-func">StrViewEqStr</span>(host_sv, <span class="tok-string">&quot;api.internal.net&quot;</span>));
+
+    <span class="tok-type">i64</span> port = json_api.asInt(json_api.get(root, <span class="tok-string">&quot;port&quot;</span>), <span class="tok-number">80</span>);
+    assert(port == <span class="tok-number">8443</span>);
+
+    <span class="tok-type">bool</span> tls = json_api.asBool(json_api.get(root, <span class="tok-string">&quot;tls&quot;</span>), <span class="tok-type">false</span>);
+    assert(tls == <span class="tok-type">true</span>);
+
+    <span class="tok-comment">/* Query array */</span>
+    <span class="tok-type">cp_json_val_t</span> replicas = json_api.get(root, <span class="tok-string">&quot;replicas&quot;</span>);
+    assert(replicas.type == <span class="tok-func">CP_JSON_ARRAY</span>);
+    assert(json_api.len(replicas) == <span class="tok-number">3</span>);
+
+    <span class="tok-func">StrView</span> first_replica = json_api.asView(json_api.at(replicas, <span class="tok-number">0</span>));
+    assert(<span class="tok-func">StrViewEqStr</span>(first_replica, <span class="tok-string">&quot;node-a&quot;</span>));
+
+    printf(<span class="tok-string">&quot;Parsed configuration for %.*s on port %lld (TLS: %d)\n&quot;</span>,
+           (<span class="tok-type">int</span>)host_sv.len, host_sv.data, port, tls);
+
+    <span class="tok-keyword">return</span> <span class="tok-number">0</span>;
+}</code></pre></div>
+<hr />
+<span id="limitations" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="edge" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="7-limitations-amp-edge-cases"><a href="#7-limitations-amp-edge-cases" class="heading-anchor">#</a> 7. Limitations &amp; Edge Cases</h2>
+<ul>
+<li><strong>Non-Materializing Parser</strong>: <code>cp_json</code> is an inspector and query engine, not a serializer or mutating DOM tree.</li>
+<li><strong>Escape Sequences</strong>: <code>JsonAsView</code> returns raw byte slices referencing the input buffer. Escape sequences such as <code>\n</code> or <code>\uXXXX</code> remain unescaped. If escaped characters require unescaping, copy them into an <code>Arena</code> or <code>String</code>.</li>
+<li><strong>Large Container Scan Latency</strong>: Because <code>cp_json</code> does not construct an auxiliary index, <code>JsonAt</code> on an array of 100,000 items scans sequentially from element 0. For repeated queries over huge arrays, parse elements into a <code>Vec(T)</code>.</li>
+</ul>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.borderColor = 'var(--azure)';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.borderColor = '';
+        }, 1500);
+      });
+    }
+
+    function scrollToAnchor() {
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+      const cleanHash = decodeURIComponent(rawHash).toLowerCase().replace(/[^a-z0-9_]/g, '');
+      let target = document.getElementById(rawHash) || document.getElementById(cleanHash);
+      if (!target) {
+        const candidates = document.querySelectorAll('h1, h2, h3, h4, td, code, th, span[id]');
+        for (const el of candidates) {
+          const id = (el.id || '').toLowerCase();
+          const text = (el.textContent || '').toLowerCase();
+          if (id === cleanHash || id.includes(cleanHash) || text.includes(cleanHash)) {
+            target = el.closest('tr') || el;
+            break;
+          }
+        }
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-target');
+        setTimeout(() => { target.classList.remove('highlight-target'); }, 2500);
+      }
+    }
+    window.addEventListener('DOMContentLoaded', scrollToAnchor);
+    window.addEventListener('hashchange', scrollToAnchor);
+  </script>
+</body>
+</html>

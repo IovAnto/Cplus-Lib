@@ -1,0 +1,8 @@
+
+=== RUNNING CPLUS ALGORITHMS & SIMD MATH TESTS ===
+[TEST] Algorithms (IntroSort, RadixSort, Binary Search, Shuffle)...
+  -> Algorithm tests PASSED.
+[TEST] Linear Algebra & SIMD Math (Vec2, Vec3, Mat4)...
+  -> Linear Algebra & SIMD Math tests PASSED.
+=== ALL UNIT TESTS PASSED SUCCESSFULLY! ===
+

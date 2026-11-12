@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="logoBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e1422" />
+      <stop offset="100%" stop-color="#080c14" />
+    </linearGradient>
+  </defs>
+
+  <!-- Clean Minimal Squircle Canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#logoBg)" />
+  <rect width="508" height="508" x="2" y="2" rx="110" fill="none" stroke="#1f2b42" stroke-width="2" />
+
+  <!-- The C Glyph: 270 deg Arc, 45 deg Radial Flat Terminals -->
+  <path d="M 356.102 146.398 A 155.000 155.000 0 1 0 356.102 365.602 L 320.746 330.254 A 105.000 105.000 0 1 1 320.746 181.746 Z" fill="#ffffff" />
+
+  <!-- The + Glyph: Electric Turquoise, Centered in the Opening -->
+  <rect x="288.50" y="242.00" width="132.00" height="28.00" rx="2.5" fill="#16e1e5" />
+  <rect x="340.50" y="190.00" width="28.00" height="132.00" rx="2.5" fill="#16e1e5" />
+</svg>

@@ -1,0 +1,32 @@
+=================================================================================
+  SCIENTIFIC EXPERIMENT REPORT: MEMORY ALLOCATION LATENCY & THROUGHPUT
+  Parameters: 5 runs x 1000000 allocations of 64 bytes with byte write verification
+=================================================================================
+
+[EXPERIMENT 1] Pure C (malloc + write + free individual)
+  Run 1:   106.81 ms
+  Run 2:    55.11 ms
+  Run 3:    56.15 ms
+  Run 4:    53.83 ms
+  Run 5:    56.30 ms
+  >> Mean:    65.64 ms | Min:    53.83 ms | Max:   106.81 ms | StdDev: ±20.61 ms | Latency:    65.64 ns/op
+
+[EXPERIMENT 2] Cplus (ArenaAlloc O(1) + write + batch ArenaReset)
+  Run 1:     6.98 ms
+  Run 2:    11.62 ms
+  Run 3:    11.55 ms
+  Run 4:    11.57 ms
+  Run 5:    11.55 ms
+  >> Mean:    10.65 ms | Min:     6.98 ms | Max:    11.62 ms | StdDev: ± 1.84 ms | Latency:    10.65 ns/op
+  >> SPEEDUP:     6.16x FASTER than Pure C
+
+[EXPERIMENT 3] Cplus (PoolAlloc O(1) + write + PoolFree O(1))
+  Run 1:    16.16 ms
+  Run 2:    19.21 ms
+  Run 3:    15.72 ms
+  Run 4:    17.47 ms
+  Run 5:    15.59 ms
+  >> Mean:    16.83 ms | Min:    15.59 ms | Max:    19.21 ms | StdDev: ± 1.36 ms | Latency:    16.83 ns/op
+  >> SPEEDUP:     3.90x FASTER than Pure C
+
+=================================================================================

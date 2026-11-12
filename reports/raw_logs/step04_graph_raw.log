@@ -1,0 +1,41 @@
+=================================================================================
+  SCIENTIFIC EXPERIMENT REPORT: GRAPH ALLOCATION & PATHFINDING LATENCY
+=================================================================================
+
+[VERIFICATION] Running strict parity check between Pure C and Cplus...
+  Pure C: edges = 100000 | sum_dest = 999950000 | sum_weights = 2550000.0
+  Cplus:  edges = 100000 | sum_dest = 999950000 | sum_weights = 2550000.0
+  >> PARITY CHECK PASSED: Pure C and Cplus graphs are 100.0% identical!
+
+--- PART A: Graph Construction (20,000 nodes, 100,000 edges: Build + Free) ---
+
+[EXPERIMENT 1.1] Pure C (Individual malloc for each edge + iterative free)
+  Run 1:     6.85 ms
+  Run 2:     4.29 ms
+  Run 3:     4.32 ms
+  Run 4:     4.49 ms
+  Run 5:     4.14 ms
+  >> Mean:     4.82 ms | Min:     4.14 ms | Max:     6.85 ms | StdDev: ± 1.02 ms | Latency:    48.20 ns/edge
+
+[EXPERIMENT 1.2] Cplus Graph (Arena-backed contiguous edges + O(1) batch free)
+  Run 1:     1.76 ms
+  Run 2:     1.03 ms
+  Run 3:     1.01 ms
+  Run 4:     0.99 ms
+  Run 5:     0.99 ms
+  >> Mean:     1.16 ms | Min:     0.99 ms | Max:     1.76 ms | StdDev: ± 0.30 ms | Latency:    11.57 ns/edge
+  >> SPEEDUP:     4.17x FASTER than Pure C
+
+--- PART B: Min-Heap Dijkstra Shortest Path Queries (10,000 nodes, 40,000 edges) ---
+
+[EXPERIMENT 2.1] Cplus Dijkstra Query Latency (200 queries)
+  Run 1:   176.35 ms
+  Run 2:   177.89 ms
+  Run 3:   177.20 ms
+  Run 4:   178.12 ms
+  Run 5:   177.87 ms
+  >> Mean:   177.49 ms | Min:   176.35 ms | Max:   178.12 ms | StdDev: ± 0.64 ms
+  >> Avg Query Latency:   887.43 microseconds / query
+  >> Throughput:         1126.84 shortest path queries / sec
+
+=================================================================================

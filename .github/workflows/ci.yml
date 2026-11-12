@@ -1,0 +1,68 @@
+name: CI / CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-matrix:
+    name: Test (${{ matrix.compiler }} - ${{ matrix.build_type }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [ gcc, clang ]
+        build_type: [ Release, Debug, ASan ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set Compiler
+        run: echo "CC=${{ matrix.compiler }}" >> $GITHUB_ENV
+
+      - name: Configure CMake
+        run: |
+          if [ "${{ matrix.build_type }}" = "ASan" ]; then
+            cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
+          else
+            cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          fi
+
+      - name: Build Library and Test Binaries
+        run: cmake --build build -j$(nproc)
+
+      - name: Execute CTest Suite
+        run: ctest --test-dir build --output-on-failure --timeout 30
+
+      - name: Run Quickstart Example
+        run: ./build/quickstart
+
+  amalgamation-parity:
+    name: Single-Header Amalgamation Parity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify Single-Header Sync
+        run: |
+          python3 tools/amalgamate.py
+          git diff --exit-code dist/
+
+      - name: Build and Verify Target
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j$(nproc)
+          ctest --test-dir build --output-on-failure

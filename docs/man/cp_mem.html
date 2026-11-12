@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C+ Manual // Memory Subsystem (cp_mem)</title>
+  <style>
+    
+    :root {
+      --bg: #000000;
+      --bg-dark: #050505;
+      --surface: #0a0a0a;
+      --surface-hover: #121214;
+      --border: #1a1a1a;
+      --border-bright: #27272a;
+      --azure: #16e1e5;
+      --azure-dim: rgba(22, 225, 229, 0.08);
+      --text: #c4c4c8;
+      --text-bright: #ffffff;
+      --text-dim: #71717a;
+      
+      /* VS Code / Neovim 1:1 C Syntax Highlighting */
+      --tok-keyword: #c586c0;
+      --tok-type: #4ec9b0;
+      --tok-func: #dcdcaa;
+      --tok-string: #ce9178;
+      --tok-number: #b5cea8;
+      --tok-comment: #6a9955;
+      --tok-macro: #c586c0;
+      
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* Code Highlight Styles */
+    .tok-keyword { color: var(--tok-keyword); font-weight: 600; }
+    .tok-type { color: var(--tok-type); font-weight: 500; }
+    .tok-func { color: var(--tok-func); }
+    .tok-string { color: var(--tok-string); }
+    .tok-number { color: var(--tok-number); }
+    .tok-comment { color: var(--tok-comment); font-style: italic; }
+    .tok-macro { color: var(--tok-macro); font-weight: 600; }
+
+    /* Code Container */
+    .code-container {
+      background: #050505;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+    .code-header {
+      background: #0a0a0a;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+      background: var(--azure-dim);
+      border-color: var(--azure);
+      color: var(--azure);
+    }
+    .code-pre {
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-bright);
+    }
+
+    /* Headings */
+    h1 {
+      color: var(--text-bright);
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: -0.4px;
+    }
+    h2 {
+      color: var(--text-bright);
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      letter-spacing: -0.2px;
+    }
+    h3 {
+      color: #f4f4f5;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 22px;
+      margin-bottom: 8px;
+    }
+    p { margin-bottom: 14px; }
+    strong { color: var(--text-bright); }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    /* Inline Code */
+    p code, li code, td code {
+      background: #0a0a0a;
+      color: #f4f4f5;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    li { margin-bottom: 5px; }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #050505;
+    }
+    th {
+      background: #0a0a0a;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #141414;
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.01); }
+
+    /* Heading Anchor */
+    .heading-anchor {
+      color: var(--text-dim);
+      opacity: 0.3;
+      text-decoration: none;
+      margin-right: 6px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .heading-anchor:hover { opacity: 1; color: var(--azure); }
+
+    /* Anchors & Highlighting */
+    .anchor-target {
+      display: block;
+      position: relative;
+      top: -70px;
+      visibility: hidden;
+    }
+    .highlight-target {
+      animation: targetPulse 2s ease-out;
+    }
+    @keyframes targetPulse {
+      0% { background: rgba(22, 225, 229, 0.2) !important; outline: 1px solid var(--azure); border-radius: 4px; }
+      100% { background: transparent; }
+    }
+    
+
+    /* Page Layout */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #000000;
+    }
+    .site-header {
+      background: #000000;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #000000;
+      border: 1px solid var(--azure);
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .brand-badge span { color: var(--azure); }
+    .brand-text {
+      color: var(--text-bright);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .brand-text span {
+      color: var(--text-dim);
+      font-weight: 400;
+      font-size: 11px;
+      margin-left: 6px;
+    }
+    .header-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .header-nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .header-nav a:hover {
+      color: var(--azure);
+      border-color: var(--azure);
+    }
+
+    .main-body {
+      display: flex;
+      flex: 1;
+    }
+    .sidebar {
+      width: 250px;
+      background: #000000;
+      border-right: 1px solid var(--border);
+      padding: 12px 8px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      height: calc(100vh - 45px);
+      position: sticky;
+      top: 45px;
+    }
+    .sidebar-heading {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 10px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-bottom: 2px;
+      border-left: 2px solid transparent;
+      transition: all 0.1s ease;
+    }
+    .nav-item:hover {
+      background: var(--surface-hover);
+    }
+    .nav-item.active {
+      background: rgba(22, 225, 229, 0.04);
+      border-left-color: var(--azure);
+    }
+    .nav-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-title {
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .nav-sub {
+      font-size: 10px;
+      color: #52525b;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 32px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="site-header">
+      <a href="../index.html" class="brand-link">
+        <div class="brand-badge">C<span>+</span></div>
+        <div class="brand-text">Foundation Library <span>// Formal Manual</span></div>
+      </a>
+      <div class="header-nav">
+        <a href="../index.html">&larr; Telescope Search (/)</a>
+        <a href="https://github.com/IovAnto/Cplus-Lib" target="_blank">GitHub Repo</a>
+      </div>
+    </header>
+
+    <div class="main-body">
+      <aside class="sidebar">
+        <div class="sidebar-heading">18 Core Subsystems</div>
+        <a href="cp_core.html" class="nav-item "><span class="nav-title">cp_core</span><span class="nav-sub">Core Architecture</span></a>
+<a href="cp_mem.html" class="nav-item active"><span class="nav-title">cp_mem</span><span class="nav-sub">Memory Subsystem</span></a>
+<a href="cp_str.html" class="nav-item "><span class="nav-title">cp_str</span><span class="nav-sub">Strings & Builders</span></a>
+<a href="cp_fs.html" class="nav-item "><span class="nav-title">cp_fs</span><span class="nav-sub">Filesystem & IO</span></a>
+<a href="cp_ds.html" class="nav-item "><span class="nav-title">cp_ds</span><span class="nav-sub">Data Structures</span></a>
+<a href="cp_graph.html" class="nav-item "><span class="nav-title">cp_graph</span><span class="nav-sub">Graphs & Paths</span></a>
+<a href="cp_algo.html" class="nav-item "><span class="nav-title">cp_algo</span><span class="nav-sub">Algorithms & Sorting</span></a>
+<a href="cp_math.html" class="nav-item "><span class="nav-title">cp_math</span><span class="nav-sub">SIMD & Fast Math</span></a>
+<a href="cp_thread.html" class="nav-item "><span class="nav-title">cp_thread</span><span class="nav-sub">Concurrency & Workers</span></a>
+<a href="cp_net.html" class="nav-item "><span class="nav-title">cp_net</span><span class="nav-sub">High-Performance Net</span></a>
+<a href="cp_tui.html" class="nav-item "><span class="nav-title">cp_tui</span><span class="nav-sub">Terminal UI & Telemetry</span></a>
+<a href="cp_hash.html" class="nav-item "><span class="nav-title">cp_hash</span><span class="nav-sub">Cryptographic Hashes</span></a>
+<a href="cp_map.html" class="nav-item "><span class="nav-title">cp_map</span><span class="nav-sub">Hash Maps & Sets</span></a>
+<a href="cp_args.html" class="nav-item "><span class="nav-title">cp_args</span><span class="nav-sub">CLI Argument Parser</span></a>
+<a href="cp_time.html" class="nav-item "><span class="nav-title">cp_time</span><span class="nav-sub">Precision Clocks</span></a>
+<a href="cp_json.html" class="nav-item "><span class="nav-title">cp_json</span><span class="nav-sub">Streaming JSON Engine</span></a>
+<a href="cp_stack.html" class="nav-item "><span class="nav-title">cp_stack</span><span class="nav-sub">Cache-Friendly Stack</span></a>
+<a href="cp_os.html" class="nav-item "><span class="nav-title">cp_os</span><span class="nav-sub">Platform Subsystem</span></a>
+      </aside>
+
+      <main class="content-area">
+        <span id="module" class="anchor-target"></span><span id="specification" class="anchor-target"></span><span id="cp_mem" class="anchor-target"></span><span id="memory" class="anchor-target"></span><span id="subsystem" class="anchor-target"></span><h1 id="module-specification-cp-mem-memory-subsystem"><a href="#module-specification-cp-mem-memory-subsystem" class="heading-anchor">#</a> Module Specification: cp_mem (Memory Subsystem)</h1>
+<h2 id="1-tl-dr"><a href="#1-tl-dr" class="heading-anchor">#</a> 1. TL;DR</h2>
+<p>The <code>cp_mem</code> subsystem provides high-performance, deterministic memory allocation models designed to eliminate heap fragmentation and allocator lock contention in systems software.</p>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-comment">/* 1. Linear Arena Allocator */</span>
+<span class="tok-type">Arena</span> *arena = <span class="tok-func">ArenaCreate</span>(<span class="tok-number">64</span> * <span class="tok-number">1024</span>);
+<span class="tok-type">int</span> *buffer = (<span class="tok-type">int</span> *)<span class="tok-func">ArenaAlloc</span>(arena, <span class="tok-number">1024</span> * <span class="tok-keyword">sizeof</span>(<span class="tok-type">int</span>));
+<span class="tok-func">ArenaDestroy</span>(arena); <span class="tok-comment">// 1 single bulk free</span>
+
+<span class="tok-comment">/* 2. Scoped Thread-Local Scratch Arena */</span>
+<span class="tok-type">TempArena</span> scratch = <span class="tok-func">ScratchBegin</span>();
+<span class="tok-type">char</span> *msg = <span class="tok-func">StrFormat</span>(scratch.arena, <span class="tok-string">&quot;Process PID: %d&quot;</span>, <span class="tok-func">OsPid</span>());
+<span class="tok-func">ScratchEnd</span>(scratch); <span class="tok-comment">// Instant rollback in 1 CPU cycle</span></code></pre></div>
+<hr />
+<span id="formal" class="anchor-target"></span><span id="definitions" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="internal" class="anchor-target"></span><span id="architecture" class="anchor-target"></span><h2 id="2-formal-definitions-amp-internal-architecture"><a href="#2-formal-definitions-amp-internal-architecture" class="heading-anchor">#</a> 2. Formal Definitions &amp; Internal Architecture</h2>
+<span id="struct" class="anchor-target"></span><span id="layout" class="anchor-target"></span><span id="arena" class="anchor-target"></span><span id="cp_arena_t" class="anchor-target"></span><h3 id="2-1-struct-layout-arena-cp-arena-t"><a href="#2-1-struct-layout-arena-cp-arena-t" class="heading-anchor">#</a> 2.1 Struct Layout: <code>Arena</code> (<code>cp_arena_t</code>)</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> cp_arena_chunk {
+    <span class="tok-keyword">struct</span> cp_arena_chunk *prev;
+    <span class="tok-type">usize</span> capacity;
+    <span class="tok-type">usize</span> offset;
+    <span class="tok-type">u8</span> data[];
+} <span class="tok-type">cp_arena_chunk_t</span>;
+
+<span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> cp_arena {
+    <span class="tok-type">usize</span> default_chunk_size;
+    <span class="tok-type">cp_arena_chunk_t</span> *current_chunk;
+    <span class="tok-type">usize</span> total_allocated;
+} <span class="tok-type">Arena</span>;</code></pre></div>
+<ul>
+<li><strong>Alignment</strong>: Every bump allocation is aligned by default to <code>CP_DEFAULT_ALIGNMENT</code> (16 bytes on x86-64), ensuring hardware compliance for all scalar types. Arbitrary alignments (e.g. 32-byte AVX or 64-byte cacheline) are supported via <code>ArenaAllocAlign</code>.</li>
+<li><strong>Chunk Chaining</strong>: If an allocation exceeds the remaining capacity of <code>current_chunk</code>, a new chunk of size <code>max(default_chunk_size, requested_size)</code> is allocated and chained.</li>
+<li><strong>Bulk Free</strong>: <code>ArenaReset</code> restores the offset of all chunks to 0 without releasing memory to the OS, keeping the virtual address space warm for subsequent frames. <code>ArenaDestroy</code> walks the chunk list and releases all memory back to the system.</li>
+</ul>
+<span id="struct" class="anchor-target"></span><span id="layout" class="anchor-target"></span><span id="temparena" class="anchor-target"></span><span id="cp_temp_arena_t" class="anchor-target"></span><h3 id="2-2-struct-layout-temparena-cp-temp-arena-t"><a href="#2-2-struct-layout-temparena-cp-temp-arena-t" class="heading-anchor">#</a> 2.2 Struct Layout: <code>TempArena</code> (<code>cp_temp_arena_t</code>)</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> {
+    <span class="tok-type">Arena</span> *arena;
+    <span class="tok-type">cp_arena_chunk_t</span> *chunk;
+    <span class="tok-type">usize</span> offset;
+} <span class="tok-type">TempArena</span>;</code></pre></div>
+<ul>
+<li>A lightweight checkpoint (24 bytes) that captures the exact position of an arena's bump cursor. Calling <code>ScratchEnd(temp)</code> restores the pointer in a single CPU register assignment.</li>
+</ul>
+<span id="struct" class="anchor-target"></span><span id="layout" class="anchor-target"></span><span id="pool" class="anchor-target"></span><span id="cp_pool_t" class="anchor-target"></span><h3 id="2-3-struct-layout-pool-cp-pool-t"><a href="#2-3-struct-layout-pool-cp-pool-t" class="heading-anchor">#</a> 2.3 Struct Layout: <code>Pool</code> (<code>cp_pool_t</code>)</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> cp_pool {
+    <span class="tok-type">usize</span> item_size;
+    <span class="tok-type">usize</span> item_count;
+    <span class="tok-keyword">void</span> *free_list;
+    <span class="tok-type">usize</span> used;
+} <span class="tok-type">Pool</span>;</code></pre></div>
+<ul>
+<li>A fixed-size slab allocator with an embedded intrusive singly linked free-list. Provides true $O(1)$ allocation and arbitrary $O(1)$ deallocation without heap fragmentation.</li>
+</ul>
+<hr />
+<span id="operational" class="anchor-target"></span><span id="guarantees" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="contracts" class="anchor-target"></span><h2 id="3-operational-guarantees-amp-contracts"><a href="#3-operational-guarantees-amp-contracts" class="heading-anchor">#</a> 3. Operational Guarantees &amp; Contracts</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Arena</th>
+<th>Scratch Pool</th>
+<th>Slab Pool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Allocation Latency</strong></td>
+<td>$O(1)$ amortized (pointer bump)</td>
+<td>$O(1)$ (1 clock cycle)</td>
+<td>$O(1)$ (free-list pop)</td>
+</tr>
+<tr>
+<td><strong>Deallocation Latency</strong></td>
+<td>$O(1)$ bulk</td>
+<td>$O(1)$ rollback</td>
+<td>$O(1)$ free-list push</td>
+</tr>
+<tr>
+<td><strong>Heap Allocations</strong></td>
+<td>0 per object (chunked)</td>
+<td>0 (pre-warmed ring)</td>
+<td>0 during runtime</td>
+</tr>
+<tr>
+<td><strong>Memory Fragmentation</strong></td>
+<td>0% (strictly contiguous)</td>
+<td>0% (strictly contiguous)</td>
+<td>0% (fixed slot size)</td>
+</tr>
+<tr>
+<td><strong>Thread-Safety</strong></td>
+<td>Thread-confined</td>
+<td>Isolated per-thread ring</td>
+<td>Requires external lock</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="api" class="anchor-target"></span><span id="matrix" class="anchor-target"></span><h2 id="4-api-matrix"><a href="#4-api-matrix" class="heading-anchor">#</a> 4. API Matrix</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>PascalCase Macro</th>
+<th>Dot-Notation API</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create Arena</td>
+<td><span id="arenacreate" class="anchor-target"></span><code>ArenaCreate(chunk_size)</code></td>
+<td><span id="create" class="anchor-target"></span><code>arena.create(chunk_size)</code></td>
+<td>Instantiate new linear arena</td>
+</tr>
+<tr>
+<td>Allocate</td>
+<td><span id="arenaalloc" class="anchor-target"></span><code>ArenaAlloc(arena, size)</code></td>
+<td><span id="alloc" class="anchor-target"></span><code>arena.alloc(arena, size)</code></td>
+<td>16-byte aligned bump allocation</td>
+</tr>
+<tr>
+<td>Allocate Zeroed</td>
+<td><span id="arenaalloczero" class="anchor-target"></span><code>ArenaAllocZero(arena, size)</code></td>
+<td><span id="alloczero" class="anchor-target"></span><code>arena.allocZero(arena, size)</code></td>
+<td>Zero-initialized bump allocation</td>
+</tr>
+<tr>
+<td>Allocate Aligned</td>
+<td><span id="arenaallocalign" class="anchor-target"></span><code>ArenaAllocAlign(a, sz, align)</code></td>
+<td><span id="allocalign" class="anchor-target"></span><code>arena.allocAlign(a, sz, align)</code></td>
+<td>Arbitrary power-of-two aligned alloc</td>
+</tr>
+<tr>
+<td>Reset Arena</td>
+<td><span id="arenareset" class="anchor-target"></span><code>ArenaReset(arena)</code></td>
+<td><span id="reset" class="anchor-target"></span><code>arena.reset(arena)</code></td>
+<td>Reset cursors without freeing chunks</td>
+</tr>
+<tr>
+<td>Destroy Arena</td>
+<td><span id="arenadestroy" class="anchor-target"></span><code>ArenaDestroy(arena)</code></td>
+<td><span id="destroy" class="anchor-target"></span><code>arena.destroy(arena)</code></td>
+<td>Release all memory to OS</td>
+</tr>
+<tr>
+<td>Scratch Begin</td>
+<td><span id="scratchbegin" class="anchor-target"></span><code>ScratchBegin()</code></td>
+<td><span id="begin" class="anchor-target"></span><code>mem.scratch.begin()</code></td>
+<td>Acquire thread-local checkpoint</td>
+</tr>
+<tr>
+<td>Scratch End</td>
+<td><span id="scratchend" class="anchor-target"></span><code>ScratchEnd(temp)</code></td>
+<td><span id="end" class="anchor-target"></span><code>mem.scratch.end(temp)</code></td>
+<td>Roll back thread-local checkpoint</td>
+</tr>
+<tr>
+<td>Create Pool</td>
+<td><span id="poolcreate" class="anchor-target"></span><code>PoolCreate(item_sz, count)</code></td>
+<td><span id="create" class="anchor-target"></span><code>pool.create(item_sz, count)</code></td>
+<td>Pre-allocate fixed-size slab pool</td>
+</tr>
+<tr>
+<td>Pool Alloc</td>
+<td><span id="poolalloc" class="anchor-target"></span><code>PoolAlloc(pool)</code></td>
+<td><span id="alloc" class="anchor-target"></span><code>pool.alloc(pool)</code></td>
+<td>Pop slot from free-list</td>
+</tr>
+<tr>
+<td>Pool Free</td>
+<td><span id="poolfree" class="anchor-target"></span><code>PoolFree(pool, ptr)</code></td>
+<td><span id="free" class="anchor-target"></span><code>pool.free(pool, ptr)</code></td>
+<td>Return slot to free-list</td>
+</tr>
+<tr>
+<td>Destroy Pool</td>
+<td><span id="pooldestroy" class="anchor-target"></span><code>PoolDestroy(pool)</code></td>
+<td><span id="destroy" class="anchor-target"></span><code>pool.destroy(pool)</code></td>
+<td>Free slab pool back to OS</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="use" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="5-use-cases"><a href="#5-use-cases" class="heading-anchor">#</a> 5. Use Cases</h2>
+<ol>
+<li><strong>Per-Frame Game / Render Loops</strong>: Allocate all temporary transforms, transient entity buffers, and rendering commands from an <code>Arena</code>, resetting it at the end of each frame (<code>ArenaReset</code>) with 0 kernel syscalls.</li>
+<li><strong>Compiler &amp; AST Parsing</strong>: Allocate abstract syntax tree nodes into an arena during a compilation pass. When compilation completes or errors out, destroy the entire tree in 1 cycle.</li>
+<li><strong>High-Frequency Network Packets</strong>: Pre-allocate a <code>Pool</code> of 4096 network packet descriptors (1500 bytes each) for deterministic $O(1)$ packet reception.</li>
+</ol>
+<hr />
+<span id="complete" class="anchor-target"></span><span id="c11" class="anchor-target"></span><span id="usage" class="anchor-target"></span><span id="examples" class="anchor-target"></span><h2 id="6-complete-c11-usage-examples"><a href="#6-complete-c11-usage-examples" class="heading-anchor">#</a> 6. Complete C11 Usage Examples</h2>
+<span id="example" class="anchor-target"></span><span id="frame" class="anchor-target"></span><span id="based" class="anchor-target"></span><span id="scratch" class="anchor-target"></span><span id="buffer" class="anchor-target"></span><h3 id="example-1-frame-based-scratch-buffer"><a href="#example-1-frame-based-scratch-buffer" class="heading-anchor">#</a> Example 1: Frame-Based Scratch Buffer</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-keyword">void</span> process_sensor_batch(<span class="tok-keyword">const</span> <span class="tok-type">char</span> *raw_data) {
+    <span class="tok-type">TempArena</span> scratch = <span class="tok-func">ScratchBegin</span>();
+    
+    <span class="tok-type">usize</span> count = <span class="tok-number">0</span>;
+    <span class="tok-func">StrView</span> *readings = <span class="tok-func">StrSplitArena</span>(<span class="tok-func">StrFromC</span>(raw_data), <span class="tok-string">&#x27;,&#x27;</span>, scratch.arena, &amp;count);
+    
+    <span class="tok-type">float</span> sum = <span class="tok-number">0</span>.<span class="tok-number">0f</span>;
+    <span class="tok-keyword">for</span> (<span class="tok-type">usize</span> i = <span class="tok-number">0</span>; i &lt; count; i++) {
+        sum += (<span class="tok-type">float</span>)atof(readings[i].data);
+    }
+    printf(<span class="tok-string">&quot;Processed %zu sensors: Average = %.2f\n&quot;</span>, count, sum / (<span class="tok-type">float</span>)count);
+    
+    <span class="tok-func">ScratchEnd</span>(scratch); <span class="tok-comment">// All memory reclaimed instantly</span>
+}</code></pre></div>
+<span id="example" class="anchor-target"></span><span id="simd" class="anchor-target"></span><span id="aligned" class="anchor-target"></span><span id="matrix" class="anchor-target"></span><span id="processing" class="anchor-target"></span><h3 id="example-2-simd-aligned-matrix-processing"><a href="#example-2-simd-aligned-matrix-processing" class="heading-anchor">#</a> Example 2: SIMD-Aligned Matrix Processing</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-keyword">void</span> compute_avx_matrix(<span class="tok-type">Arena</span> *arena) {
+    <span class="tok-comment">// 32-byte alignment required for AVX-256 load/store instructions</span>
+    <span class="tok-type">float</span> *matrix_a = (<span class="tok-type">float</span> *)<span class="tok-func">ArenaAllocAlign</span>(arena, <span class="tok-number">1024</span> * <span class="tok-keyword">sizeof</span>(<span class="tok-type">float</span>), <span class="tok-number">32</span>);
+    <span class="tok-type">float</span> *matrix_b = (<span class="tok-type">float</span> *)<span class="tok-func">ArenaAllocAlign</span>(arena, <span class="tok-number">1024</span> * <span class="tok-keyword">sizeof</span>(<span class="tok-type">float</span>), <span class="tok-number">32</span>);
+    
+    <span class="tok-comment">// Process matrices with zero cacheline unaligned penalty</span>
+    <span class="tok-keyword">for</span> (<span class="tok-type">int</span> i = <span class="tok-number">0</span>; i &lt; <span class="tok-number">1024</span>; i++) {
+        matrix_a[i] = (<span class="tok-type">float</span>)i;
+        matrix_b[i] = matrix_a[i] * <span class="tok-number">2</span>.<span class="tok-number">0f</span>;
+    }
+}</code></pre></div>
+<hr />
+<span id="limitations" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="operational" class="anchor-target"></span><span id="constraints" class="anchor-target"></span><h2 id="7-limitations-amp-operational-constraints"><a href="#7-limitations-amp-operational-constraints" class="heading-anchor">#</a> 7. Limitations &amp; Operational Constraints</h2>
+<ul>
+<li><strong>No Individual <code>free()</code> in Arena</strong>: An individual object cannot be freed independently of the arena. If you require arbitrary individual element deallocation, use <code>Pool</code> instead.</li>
+<li><strong>Thread Confinement</strong>: An <code>Arena</code> is not thread-safe. Multiple worker threads must not allocate from the same <code>Arena</code> without an external <code>Mutex</code> or <code>ScopedLock</code>. Use <code>ScratchBegin()</code> to obtain isolated per-thread arenas.</li>
+<li><strong>Maximum Chunk Size</strong>: Default chunk size is clamped between 4 KiB and 1 GiB.</li>
+</ul>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.borderColor = 'var(--azure)';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.borderColor = '';
+        }, 1500);
+      });
+    }
+
+    function scrollToAnchor() {
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+      const cleanHash = decodeURIComponent(rawHash).toLowerCase().replace(/[^a-z0-9_]/g, '');
+      let target = document.getElementById(rawHash) || document.getElementById(cleanHash);
+      if (!target) {
+        const candidates = document.querySelectorAll('h1, h2, h3, h4, td, code, th, span[id]');
+        for (const el of candidates) {
+          const id = (el.id || '').toLowerCase();
+          const text = (el.textContent || '').toLowerCase();
+          if (id === cleanHash || id.includes(cleanHash) || text.includes(cleanHash)) {
+            target = el.closest('tr') || el;
+            break;
+          }
+        }
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-target');
+        setTimeout(() => { target.classList.remove('highlight-target'); }, 2500);
+      }
+    }
+    window.addEventListener('DOMContentLoaded', scrollToAnchor);
+    window.addEventListener('hashchange', scrollToAnchor);
+  </script>
+</body>
+</html>

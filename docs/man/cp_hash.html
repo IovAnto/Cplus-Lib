@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C+ Manual // Cryptographic Hashes (cp_hash)</title>
+  <style>
+    
+    :root {
+      --bg: #000000;
+      --bg-dark: #050505;
+      --surface: #0a0a0a;
+      --surface-hover: #121214;
+      --border: #1a1a1a;
+      --border-bright: #27272a;
+      --azure: #16e1e5;
+      --azure-dim: rgba(22, 225, 229, 0.08);
+      --text: #c4c4c8;
+      --text-bright: #ffffff;
+      --text-dim: #71717a;
+      
+      /* VS Code / Neovim 1:1 C Syntax Highlighting */
+      --tok-keyword: #c586c0;
+      --tok-type: #4ec9b0;
+      --tok-func: #dcdcaa;
+      --tok-string: #ce9178;
+      --tok-number: #b5cea8;
+      --tok-comment: #6a9955;
+      --tok-macro: #c586c0;
+      
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* Code Highlight Styles */
+    .tok-keyword { color: var(--tok-keyword); font-weight: 600; }
+    .tok-type { color: var(--tok-type); font-weight: 500; }
+    .tok-func { color: var(--tok-func); }
+    .tok-string { color: var(--tok-string); }
+    .tok-number { color: var(--tok-number); }
+    .tok-comment { color: var(--tok-comment); font-style: italic; }
+    .tok-macro { color: var(--tok-macro); font-weight: 600; }
+
+    /* Code Container */
+    .code-container {
+      background: #050505;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+    .code-header {
+      background: #0a0a0a;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+      background: var(--azure-dim);
+      border-color: var(--azure);
+      color: var(--azure);
+    }
+    .code-pre {
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-bright);
+    }
+
+    /* Headings */
+    h1 {
+      color: var(--text-bright);
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: -0.4px;
+    }
+    h2 {
+      color: var(--text-bright);
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      letter-spacing: -0.2px;
+    }
+    h3 {
+      color: #f4f4f5;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 22px;
+      margin-bottom: 8px;
+    }
+    p { margin-bottom: 14px; }
+    strong { color: var(--text-bright); }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    /* Inline Code */
+    p code, li code, td code {
+      background: #0a0a0a;
+      color: #f4f4f5;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    li { margin-bottom: 5px; }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #050505;
+    }
+    th {
+      background: #0a0a0a;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #141414;
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.01); }
+
+    /* Heading Anchor */
+    .heading-anchor {
+      color: var(--text-dim);
+      opacity: 0.3;
+      text-decoration: none;
+      margin-right: 6px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .heading-anchor:hover { opacity: 1; color: var(--azure); }
+
+    /* Anchors & Highlighting */
+    .anchor-target {
+      display: block;
+      position: relative;
+      top: -70px;
+      visibility: hidden;
+    }
+    .highlight-target {
+      animation: targetPulse 2s ease-out;
+    }
+    @keyframes targetPulse {
+      0% { background: rgba(22, 225, 229, 0.2) !important; outline: 1px solid var(--azure); border-radius: 4px; }
+      100% { background: transparent; }
+    }
+    
+
+    /* Page Layout */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #000000;
+    }
+    .site-header {
+      background: #000000;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #000000;
+      border: 1px solid var(--azure);
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .brand-badge span { color: var(--azure); }
+    .brand-text {
+      color: var(--text-bright);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .brand-text span {
+      color: var(--text-dim);
+      font-weight: 400;
+      font-size: 11px;
+      margin-left: 6px;
+    }
+    .header-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .header-nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .header-nav a:hover {
+      color: var(--azure);
+      border-color: var(--azure);
+    }
+
+    .main-body {
+      display: flex;
+      flex: 1;
+    }
+    .sidebar {
+      width: 250px;
+      background: #000000;
+      border-right: 1px solid var(--border);
+      padding: 12px 8px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      height: calc(100vh - 45px);
+      position: sticky;
+      top: 45px;
+    }
+    .sidebar-heading {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 10px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-bottom: 2px;
+      border-left: 2px solid transparent;
+      transition: all 0.1s ease;
+    }
+    .nav-item:hover {
+      background: var(--surface-hover);
+    }
+    .nav-item.active {
+      background: rgba(22, 225, 229, 0.04);
+      border-left-color: var(--azure);
+    }
+    .nav-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-title {
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .nav-sub {
+      font-size: 10px;
+      color: #52525b;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 32px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="site-header">
+      <a href="../index.html" class="brand-link">
+        <div class="brand-badge">C<span>+</span></div>
+        <div class="brand-text">Foundation Library <span>// Formal Manual</span></div>
+      </a>
+      <div class="header-nav">
+        <a href="../index.html">&larr; Telescope Search (/)</a>
+        <a href="https://github.com/IovAnto/Cplus-Lib" target="_blank">GitHub Repo</a>
+      </div>
+    </header>
+
+    <div class="main-body">
+      <aside class="sidebar">
+        <div class="sidebar-heading">18 Core Subsystems</div>
+        <a href="cp_core.html" class="nav-item "><span class="nav-title">cp_core</span><span class="nav-sub">Core Architecture</span></a>
+<a href="cp_mem.html" class="nav-item "><span class="nav-title">cp_mem</span><span class="nav-sub">Memory Subsystem</span></a>
+<a href="cp_str.html" class="nav-item "><span class="nav-title">cp_str</span><span class="nav-sub">Strings & Builders</span></a>
+<a href="cp_fs.html" class="nav-item "><span class="nav-title">cp_fs</span><span class="nav-sub">Filesystem & IO</span></a>
+<a href="cp_ds.html" class="nav-item "><span class="nav-title">cp_ds</span><span class="nav-sub">Data Structures</span></a>
+<a href="cp_graph.html" class="nav-item "><span class="nav-title">cp_graph</span><span class="nav-sub">Graphs & Paths</span></a>
+<a href="cp_algo.html" class="nav-item "><span class="nav-title">cp_algo</span><span class="nav-sub">Algorithms & Sorting</span></a>
+<a href="cp_math.html" class="nav-item "><span class="nav-title">cp_math</span><span class="nav-sub">SIMD & Fast Math</span></a>
+<a href="cp_thread.html" class="nav-item "><span class="nav-title">cp_thread</span><span class="nav-sub">Concurrency & Workers</span></a>
+<a href="cp_net.html" class="nav-item "><span class="nav-title">cp_net</span><span class="nav-sub">High-Performance Net</span></a>
+<a href="cp_tui.html" class="nav-item "><span class="nav-title">cp_tui</span><span class="nav-sub">Terminal UI & Telemetry</span></a>
+<a href="cp_hash.html" class="nav-item active"><span class="nav-title">cp_hash</span><span class="nav-sub">Cryptographic Hashes</span></a>
+<a href="cp_map.html" class="nav-item "><span class="nav-title">cp_map</span><span class="nav-sub">Hash Maps & Sets</span></a>
+<a href="cp_args.html" class="nav-item "><span class="nav-title">cp_args</span><span class="nav-sub">CLI Argument Parser</span></a>
+<a href="cp_time.html" class="nav-item "><span class="nav-title">cp_time</span><span class="nav-sub">Precision Clocks</span></a>
+<a href="cp_json.html" class="nav-item "><span class="nav-title">cp_json</span><span class="nav-sub">Streaming JSON Engine</span></a>
+<a href="cp_stack.html" class="nav-item "><span class="nav-title">cp_stack</span><span class="nav-sub">Cache-Friendly Stack</span></a>
+<a href="cp_os.html" class="nav-item "><span class="nav-title">cp_os</span><span class="nav-sub">Platform Subsystem</span></a>
+      </aside>
+
+      <main class="content-area">
+        <span id="module" class="anchor-target"></span><span id="specification" class="anchor-target"></span><span id="cp_hash" class="anchor-target"></span><span id="hashing" class="anchor-target"></span><span id="subsystem" class="anchor-target"></span><h1 id="module-specification-cp-hash-hashing-subsystem"><a href="#module-specification-cp-hash-hashing-subsystem" class="heading-anchor">#</a> Module Specification: cp_hash (Hashing Subsystem)</h1>
+<h2 id="1-tl-dr"><a href="#1-tl-dr" class="heading-anchor">#</a> 1. TL;DR</h2>
+<p>The <code>cp_hash</code> subsystem delivers both ultra-high-throughput non-cryptographic hash functions for hash tables and checksums, and a clean FIPS 180-4 compliant SHA-256 implementation with zero external dependencies.</p>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-comment">/* 1. Ultra-Fast 64-bit Mixer Hash (&lt; 1 ns/byte, &gt; 3.5 GB/s) */</span>
+<span class="tok-keyword">const</span> <span class="tok-type">char</span> *key = <span class="tok-string">&quot;session_token_991823&quot;</span>;
+<span class="tok-type">u64</span> h64 = <span class="tok-func">Hash64</span>(key, strlen(key));
+
+<span class="tok-comment">/* 2. Standard 32-bit FNV-1a */</span>
+<span class="tok-type">u32</span> h32 = <span class="tok-func">HashFnv1a32</span>(key, strlen(key));
+
+<span class="tok-comment">/* 3. Cryptographic FIPS 180-4 SHA-256 */</span>
+<span class="tok-type">u8</span> digest[<span class="tok-number">32</span>];
+<span class="tok-type">char</span> hex[<span class="tok-number">65</span>];
+<span class="tok-func">Sha256</span>(key, strlen(key), digest);
+<span class="tok-func">Sha256Hex</span>(digest, hex);
+printf(<span class="tok-string">&quot;SHA-256: %s\n&quot;</span>, hex);</code></pre></div>
+<hr />
+<span id="formal" class="anchor-target"></span><span id="definitions" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="internal" class="anchor-target"></span><span id="architecture" class="anchor-target"></span><h2 id="2-formal-definitions-amp-internal-architecture"><a href="#2-formal-definitions-amp-internal-architecture" class="heading-anchor">#</a> 2. Formal Definitions &amp; Internal Architecture</h2>
+<span id="fast" class="anchor-target"></span><span id="non" class="anchor-target"></span><span id="cryptographic" class="anchor-target"></span><span id="mixer" class="anchor-target"></span><span id="hash64" class="anchor-target"></span><span id="cp_hash64" class="anchor-target"></span><h3 id="2-1-fast-non-cryptographic-mixer-hash64-cp-hash64"><a href="#2-1-fast-non-cryptographic-mixer-hash64-cp-hash64" class="heading-anchor">#</a> 2.1 Fast Non-Cryptographic Mixer: <code>Hash64</code> (<code>cp_hash64</code>)</h3>
+<ul>
+<li>Employs an unrolled multiply-shift-xor mixing pipeline based on 64-bit golden ratio constants.</li>
+<li>Processes 8-byte words per step with residual handling for trailing bytes.</li>
+<li>Passes standard Avalanche tests with uniform distribution across 64-bit hash table buckets.</li>
+</ul>
+<span id="fnv" class="anchor-target"></span><span id="hashfnv1a32" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="hashfnv1a64" class="anchor-target"></span><h3 id="2-2-fnv-1a-hashfnv1a32-amp-hashfnv1a64"><a href="#2-2-fnv-1a-hashfnv1a32-amp-hashfnv1a64" class="heading-anchor">#</a> 2.2 FNV-1a: <code>HashFnv1a32</code> &amp; <code>HashFnv1a64</code></h3>
+<ul>
+<li>Standard Fowler-Noll-Vo algorithm.</li>
+<li>Initialized with offset basis (<code>2166136261u</code> for 32-bit, <code>14695981039346656037ull</code> for 64-bit).</li>
+<li>Multiplies by FNV prime per byte and XORs with byte payload.</li>
+<li>Minimal code footprint, optimal for short strings and identifiers.</li>
+</ul>
+<span id="cryptographic" class="anchor-target"></span><span id="sha" class="anchor-target"></span><span id="256" class="anchor-target"></span><span id="sha256" class="anchor-target"></span><span id="cp_sha256" class="anchor-target"></span><h3 id="2-3-cryptographic-sha-256-sha256-cp-sha256"><a href="#2-3-cryptographic-sha-256-sha256-cp-sha256" class="heading-anchor">#</a> 2.3 Cryptographic SHA-256: <code>Sha256</code> (<code>cp_sha256</code>)</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-keyword">typedef</span> <span class="tok-keyword">struct</span> {
+    <span class="tok-type">u32</span> state[<span class="tok-number">8</span>];
+    <span class="tok-type">u64</span> count;
+    <span class="tok-type">u8</span> buffer[<span class="tok-number">64</span>];
+} <span class="tok-type">cp_sha256_ctx_t</span>;</code></pre></div>
+<ul>
+<li>Fully compliant with NIST FIPS PUB 180-4.</li>
+<li>Processes 512-bit message blocks with 64 constant transformation rounds.</li>
+<li>Supports both incremental streaming (<code>Sha256Init</code> -&gt; <code>Sha256Update</code> -&gt; <code>Sha256Final</code>) and direct one-shot evaluation (<code>Sha256</code>).</li>
+<li>Converts 32-byte binary digest to lowercase hexadecimal string (<code>Sha256Hex</code>).</li>
+</ul>
+<hr />
+<span id="operational" class="anchor-target"></span><span id="guarantees" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="contracts" class="anchor-target"></span><h2 id="3-operational-guarantees-amp-contracts"><a href="#3-operational-guarantees-amp-contracts" class="heading-anchor">#</a> 3. Operational Guarantees &amp; Contracts</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Output Size</th>
+<th>Throughput</th>
+<th>Cryptographic Security</th>
+<th>Heap Allocations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span id="hash64" class="anchor-target"></span><code>Hash64</code></td>
+<td>64 bits</td>
+<td>~3.8 GB/s (memory bound)</td>
+<td>No</td>
+<td>0</td>
+</tr>
+<tr>
+<td><span id="hashfnv1a64" class="anchor-target"></span><code>HashFnv1a64</code></td>
+<td>64 bits</td>
+<td>~1.2 GB/s</td>
+<td>No</td>
+<td>0</td>
+</tr>
+<tr>
+<td><span id="hashfnv1a32" class="anchor-target"></span><code>HashFnv1a32</code></td>
+<td>32 bits</td>
+<td>~1.2 GB/s</td>
+<td>No</td>
+<td>0</td>
+</tr>
+<tr>
+<td><span id="sha256" class="anchor-target"></span><code>Sha256</code></td>
+<td>256 bits</td>
+<td>~350 MB/s</td>
+<td>Yes (Pre-image resistant)</td>
+<td>0</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="api" class="anchor-target"></span><span id="matrix" class="anchor-target"></span><h2 id="4-api-matrix"><a href="#4-api-matrix" class="heading-anchor">#</a> 4. API Matrix</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>PascalCase Macro</th>
+<th>Dot-Notation API</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fast 64-bit Hash</td>
+<td><span id="hash64" class="anchor-target"></span><code>Hash64(data, len)</code></td>
+<td><span id="u64_hash" class="anchor-target"></span><code>hash_api.u64_hash(data, len)</code></td>
+<td>High-throughput non-cryptographic 64-bit mixer hash</td>
+</tr>
+<tr>
+<td>FNV-1a 32-bit</td>
+<td><span id="hashfnv1a32" class="anchor-target"></span><code>HashFnv1a32(data, len)</code></td>
+<td><span id="fnv1a32" class="anchor-target"></span><code>hash_api.fnv1a32(data, len)</code></td>
+<td>Standard 32-bit Fowler-Noll-Vo hash</td>
+</tr>
+<tr>
+<td>FNV-1a 64-bit</td>
+<td><span id="hashfnv1a64" class="anchor-target"></span><code>HashFnv1a64(data, len)</code></td>
+<td><span id="fnv1a64" class="anchor-target"></span><code>hash_api.fnv1a64(data, len)</code></td>
+<td>Standard 64-bit Fowler-Noll-Vo hash</td>
+</tr>
+<tr>
+<td>One-Shot SHA-256</td>
+<td><span id="sha256" class="anchor-target"></span><code>Sha256(data, len, out)</code></td>
+<td><span id="sha256" class="anchor-target"></span><code>hash_api.sha256(data, len, out)</code></td>
+<td>Compute NIST FIPS 180-4 32-byte hash digest</td>
+</tr>
+<tr>
+<td>SHA-256 to Hex</td>
+<td><span id="sha256hex" class="anchor-target"></span><code>Sha256Hex(in, out_hex)</code></td>
+<td><span id="sha256hex" class="anchor-target"></span><code>hash_api.sha256Hex(in, out_hex)</code></td>
+<td>Format 32-byte hash into 64-character null-terminated hex</td>
+</tr>
+<tr>
+<td>Init SHA-256 Ctx</td>
+<td><span id="sha256init" class="anchor-target"></span><code>Sha256Init(ctx)</code></td>
+<td><span id="cp_sha256_init" class="anchor-target"></span><code>cp_sha256_init(ctx)</code></td>
+<td>Initialize incremental SHA-256 context</td>
+</tr>
+<tr>
+<td>Update SHA-256</td>
+<td><span id="sha256update" class="anchor-target"></span><code>Sha256Update(ctx, buf, len)</code></td>
+<td><span id="cp_sha256_update" class="anchor-target"></span><code>cp_sha256_update(ctx, buf, len)</code></td>
+<td>Stream bytes into SHA-256 context</td>
+</tr>
+<tr>
+<td>Finalize SHA-256</td>
+<td><span id="sha256final" class="anchor-target"></span><code>Sha256Final(ctx, out)</code></td>
+<td><span id="cp_sha256_final" class="anchor-target"></span><code>cp_sha256_final(ctx, out)</code></td>
+<td>Complete padding and emit 32-byte digest</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="use" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="5-use-cases"><a href="#5-use-cases" class="heading-anchor">#</a> 5. Use Cases</h2>
+<ol>
+<li><strong>Hash Table Keying</strong>: Use <code>Hash64</code> inside custom hash tables or <code>HashMap</code> for minimal collision rates and high throughput.</li>
+<li><strong>File Integrity Verification</strong>: Hash incoming firmware or file buffers with <code>Sha256</code> and compare checksums against authoritative sources.</li>
+<li><strong>Data Deduplication</strong>: Identify identical data chunks in network transmission by maintaining a set of SHA-256 hashes.</li>
+<li><strong>Fast String Partitioning</strong>: Partition short identifiers across thread worker queues using <code>HashFnv1a32(id, len) % worker_count</code>.</li>
+</ol>
+<hr />
+<span id="complete" class="anchor-target"></span><span id="compilable" class="anchor-target"></span><span id="example" class="anchor-target"></span><h2 id="6-complete-compilable-example"><a href="#6-complete-compilable-example" class="heading-anchor">#</a> 6. Complete Compilable Example</h2>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+<span class="tok-macro">#include</span> <span class="tok-string">&lt;stdio.h&gt;</span>
+<span class="tok-macro">#include</span> <span class="tok-string">&lt;string.h&gt;</span>
+<span class="tok-macro">#include</span> <span class="tok-string">&lt;assert.h&gt;</span>
+
+<span class="tok-type">int</span> main(<span class="tok-keyword">void</span>) {
+    <span class="tok-keyword">const</span> <span class="tok-type">char</span> *msg = <span class="tok-string">&quot;The quick brown fox jumps over the lazy dog&quot;</span>;
+    <span class="tok-type">usize</span> len = strlen(msg);
+
+    <span class="tok-comment">/* 1. Fast mixer hash */</span>
+    <span class="tok-type">u64</span> h64 = hash_api.u64_hash(msg, len);
+    assert(h64 != <span class="tok-number">0</span>);
+
+    <span class="tok-comment">/* 2. One-shot SHA-256 */</span>
+    <span class="tok-type">u8</span> digest[<span class="tok-number">32</span>];
+    hash_api.sha256(msg, len, digest);
+
+    <span class="tok-type">char</span> hex[<span class="tok-number">65</span>];
+    hash_api.sha256Hex(digest, hex);
+    assert(strcmp(hex, <span class="tok-string">&quot;d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592&quot;</span>) == <span class="tok-number">0</span>);
+    printf(<span class="tok-string">&quot;Message: \&quot;</span>%s\<span class="tok-string">&quot;\nSHA-256: %s\n&quot;</span>, msg, hex);
+
+    <span class="tok-comment">/* 3. Incremental streaming SHA-256 */</span>
+    <span class="tok-type">cp_sha256_ctx_t</span> ctx;
+    <span class="tok-func">Sha256Init</span>(&amp;ctx);
+    <span class="tok-func">Sha256Update</span>(&amp;ctx, <span class="tok-string">&quot;The quick brown &quot;</span>, <span class="tok-number">16</span>);
+    <span class="tok-func">Sha256Update</span>(&amp;ctx, <span class="tok-string">&quot;fox jumps over the lazy dog&quot;</span>, <span class="tok-number">27</span>);
+    
+    <span class="tok-type">u8</span> stream_digest[<span class="tok-number">32</span>];
+    <span class="tok-func">Sha256Final</span>(&amp;ctx, stream_digest);
+
+    <span class="tok-type">char</span> stream_hex[<span class="tok-number">65</span>];
+    <span class="tok-func">Sha256Hex</span>(stream_digest, stream_hex);
+    assert(strcmp(hex, stream_hex) == <span class="tok-number">0</span>);
+
+    <span class="tok-keyword">return</span> <span class="tok-number">0</span>;
+}</code></pre></div>
+<hr />
+<span id="limitations" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="edge" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="7-limitations-amp-edge-cases"><a href="#7-limitations-amp-edge-cases" class="heading-anchor">#</a> 7. Limitations &amp; Edge Cases</h2>
+<ul>
+<li><strong>Non-Cryptographic Collisions</strong>: <code>Hash64</code> and <code>HashFnv1a</code> are strictly designed for hash tables, bloom filters, and checksums. They must not be used for cryptographic signatures, passwords, or security authentication.</li>
+<li><strong>Hex Buffer Sizing</strong>: <code>Sha256Hex</code> requires an output buffer of at least 65 bytes (<code>32 * 2 + 1</code> for null-terminator). Supplying smaller buffers causes memory corruption.</li>
+</ul>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.borderColor = 'var(--azure)';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.borderColor = '';
+        }, 1500);
+      });
+    }
+
+    function scrollToAnchor() {
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+      const cleanHash = decodeURIComponent(rawHash).toLowerCase().replace(/[^a-z0-9_]/g, '');
+      let target = document.getElementById(rawHash) || document.getElementById(cleanHash);
+      if (!target) {
+        const candidates = document.querySelectorAll('h1, h2, h3, h4, td, code, th, span[id]');
+        for (const el of candidates) {
+          const id = (el.id || '').toLowerCase();
+          const text = (el.textContent || '').toLowerCase();
+          if (id === cleanHash || id.includes(cleanHash) || text.includes(cleanHash)) {
+            target = el.closest('tr') || el;
+            break;
+          }
+        }
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-target');
+        setTimeout(() => { target.classList.remove('highlight-target'); }, 2500);
+      }
+    }
+    window.addEventListener('DOMContentLoaded', scrollToAnchor);
+    window.addEventListener('hashchange', scrollToAnchor);
+  </script>
+</body>
+</html>

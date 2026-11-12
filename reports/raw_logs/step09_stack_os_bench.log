@@ -1,0 +1,20 @@
+===================================================================
+  Cplus Step 09: Stack, OS & System Utilities Benchmark Suite
+===================================================================
+
+=== BENCHMARK 1: PRNG Throughput (20000000 operations) ===
+Pure C libc rand():   Mean:  253.94 ms (Min:  210.85, Max:  309.79, StdDev: 37.71 ms) |   78.76 M ops/s
+Cplus Xoshiro256**:   Mean:   74.08 ms (Min:   72.36, Max:   75.77, StdDev:  1.12 ms) |  269.97 M ops/s
+Speedup: 3.43x faster than libc rand()
+
+=== BENCHMARK 2: Base64 Encoding (10 MB payload) ===
+Naive Pure C Base64:  Mean:   12.46 ms (Min:   11.84, Max:   14.53, StdDev:  1.04 ms) |  802.50 MB/s
+Cplus Base64Encode:   Mean:   13.30 ms (Min:   12.81, Max:   14.16, StdDev:  0.49 ms) |  752.04 MB/s
+Speedup: 0.94x (Parity: 100% bit-exact match on 13981016 bytes)
+
+=== BENCHMARK 3: Stack Push & Pop (10000000 items) ===
+Pure C Stack (realloc): Mean:   31.38 ms (Min:   29.94, Max:   33.09, StdDev:  1.15 ms) |  637.35 M ops/s
+Cplus Arena Stack:      Mean:   49.26 ms (Min:   44.12, Max:   58.78, StdDev:  5.20 ms) |  406.02 M ops/s
+Speedup: 0.64x faster than Pure C realloc stack
+
+All benchmarks completed successfully with bit-exact parity.

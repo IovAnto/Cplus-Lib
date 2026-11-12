@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C+ Manual // Filesystem & IO (cp_fs)</title>
+  <style>
+    
+    :root {
+      --bg: #000000;
+      --bg-dark: #050505;
+      --surface: #0a0a0a;
+      --surface-hover: #121214;
+      --border: #1a1a1a;
+      --border-bright: #27272a;
+      --azure: #16e1e5;
+      --azure-dim: rgba(22, 225, 229, 0.08);
+      --text: #c4c4c8;
+      --text-bright: #ffffff;
+      --text-dim: #71717a;
+      
+      /* VS Code / Neovim 1:1 C Syntax Highlighting */
+      --tok-keyword: #c586c0;
+      --tok-type: #4ec9b0;
+      --tok-func: #dcdcaa;
+      --tok-string: #ce9178;
+      --tok-number: #b5cea8;
+      --tok-comment: #6a9955;
+      --tok-macro: #c586c0;
+      
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* Code Highlight Styles */
+    .tok-keyword { color: var(--tok-keyword); font-weight: 600; }
+    .tok-type { color: var(--tok-type); font-weight: 500; }
+    .tok-func { color: var(--tok-func); }
+    .tok-string { color: var(--tok-string); }
+    .tok-number { color: var(--tok-number); }
+    .tok-comment { color: var(--tok-comment); font-style: italic; }
+    .tok-macro { color: var(--tok-macro); font-weight: 600; }
+
+    /* Code Container */
+    .code-container {
+      background: #050505;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin: 16px 0;
+      overflow: hidden;
+    }
+    .code-header {
+      background: #0a0a0a;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+      background: var(--azure-dim);
+      border-color: var(--azure);
+      color: var(--azure);
+    }
+    .code-pre {
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-bright);
+    }
+
+    /* Headings */
+    h1 {
+      color: var(--text-bright);
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: -0.4px;
+    }
+    h2 {
+      color: var(--text-bright);
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      letter-spacing: -0.2px;
+    }
+    h3 {
+      color: #f4f4f5;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 22px;
+      margin-bottom: 8px;
+    }
+    p { margin-bottom: 14px; }
+    strong { color: var(--text-bright); }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    /* Inline Code */
+    p code, li code, td code {
+      background: #0a0a0a;
+      color: #f4f4f5;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    li { margin-bottom: 5px; }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #050505;
+    }
+    th {
+      background: #0a0a0a;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #141414;
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.01); }
+
+    /* Heading Anchor */
+    .heading-anchor {
+      color: var(--text-dim);
+      opacity: 0.3;
+      text-decoration: none;
+      margin-right: 6px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .heading-anchor:hover { opacity: 1; color: var(--azure); }
+
+    /* Anchors & Highlighting */
+    .anchor-target {
+      display: block;
+      position: relative;
+      top: -70px;
+      visibility: hidden;
+    }
+    .highlight-target {
+      animation: targetPulse 2s ease-out;
+    }
+    @keyframes targetPulse {
+      0% { background: rgba(22, 225, 229, 0.2) !important; outline: 1px solid var(--azure); border-radius: 4px; }
+      100% { background: transparent; }
+    }
+    
+
+    /* Page Layout */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #000000;
+    }
+    .site-header {
+      background: #000000;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #000000;
+      border: 1px solid var(--azure);
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .brand-badge span { color: var(--azure); }
+    .brand-text {
+      color: var(--text-bright);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .brand-text span {
+      color: var(--text-dim);
+      font-weight: 400;
+      font-size: 11px;
+      margin-left: 6px;
+    }
+    .header-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .header-nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .header-nav a:hover {
+      color: var(--azure);
+      border-color: var(--azure);
+    }
+
+    .main-body {
+      display: flex;
+      flex: 1;
+    }
+    .sidebar {
+      width: 250px;
+      background: #000000;
+      border-right: 1px solid var(--border);
+      padding: 12px 8px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      height: calc(100vh - 45px);
+      position: sticky;
+      top: 45px;
+    }
+    .sidebar-heading {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 10px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-bottom: 2px;
+      border-left: 2px solid transparent;
+      transition: all 0.1s ease;
+    }
+    .nav-item:hover {
+      background: var(--surface-hover);
+    }
+    .nav-item.active {
+      background: rgba(22, 225, 229, 0.04);
+      border-left-color: var(--azure);
+    }
+    .nav-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+    .nav-item.active .nav-title {
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .nav-sub {
+      font-size: 10px;
+      color: #52525b;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 32px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="site-header">
+      <a href="../index.html" class="brand-link">
+        <div class="brand-badge">C<span>+</span></div>
+        <div class="brand-text">Foundation Library <span>// Formal Manual</span></div>
+      </a>
+      <div class="header-nav">
+        <a href="../index.html">&larr; Telescope Search (/)</a>
+        <a href="https://github.com/IovAnto/Cplus-Lib" target="_blank">GitHub Repo</a>
+      </div>
+    </header>
+
+    <div class="main-body">
+      <aside class="sidebar">
+        <div class="sidebar-heading">18 Core Subsystems</div>
+        <a href="cp_core.html" class="nav-item "><span class="nav-title">cp_core</span><span class="nav-sub">Core Architecture</span></a>
+<a href="cp_mem.html" class="nav-item "><span class="nav-title">cp_mem</span><span class="nav-sub">Memory Subsystem</span></a>
+<a href="cp_str.html" class="nav-item "><span class="nav-title">cp_str</span><span class="nav-sub">Strings & Builders</span></a>
+<a href="cp_fs.html" class="nav-item active"><span class="nav-title">cp_fs</span><span class="nav-sub">Filesystem & IO</span></a>
+<a href="cp_ds.html" class="nav-item "><span class="nav-title">cp_ds</span><span class="nav-sub">Data Structures</span></a>
+<a href="cp_graph.html" class="nav-item "><span class="nav-title">cp_graph</span><span class="nav-sub">Graphs & Paths</span></a>
+<a href="cp_algo.html" class="nav-item "><span class="nav-title">cp_algo</span><span class="nav-sub">Algorithms & Sorting</span></a>
+<a href="cp_math.html" class="nav-item "><span class="nav-title">cp_math</span><span class="nav-sub">SIMD & Fast Math</span></a>
+<a href="cp_thread.html" class="nav-item "><span class="nav-title">cp_thread</span><span class="nav-sub">Concurrency & Workers</span></a>
+<a href="cp_net.html" class="nav-item "><span class="nav-title">cp_net</span><span class="nav-sub">High-Performance Net</span></a>
+<a href="cp_tui.html" class="nav-item "><span class="nav-title">cp_tui</span><span class="nav-sub">Terminal UI & Telemetry</span></a>
+<a href="cp_hash.html" class="nav-item "><span class="nav-title">cp_hash</span><span class="nav-sub">Cryptographic Hashes</span></a>
+<a href="cp_map.html" class="nav-item "><span class="nav-title">cp_map</span><span class="nav-sub">Hash Maps & Sets</span></a>
+<a href="cp_args.html" class="nav-item "><span class="nav-title">cp_args</span><span class="nav-sub">CLI Argument Parser</span></a>
+<a href="cp_time.html" class="nav-item "><span class="nav-title">cp_time</span><span class="nav-sub">Precision Clocks</span></a>
+<a href="cp_json.html" class="nav-item "><span class="nav-title">cp_json</span><span class="nav-sub">Streaming JSON Engine</span></a>
+<a href="cp_stack.html" class="nav-item "><span class="nav-title">cp_stack</span><span class="nav-sub">Cache-Friendly Stack</span></a>
+<a href="cp_os.html" class="nav-item "><span class="nav-title">cp_os</span><span class="nav-sub">Platform Subsystem</span></a>
+      </aside>
+
+      <main class="content-area">
+        <span id="module" class="anchor-target"></span><span id="specification" class="anchor-target"></span><span id="cp_fs" class="anchor-target"></span><span id="high" class="anchor-target"></span><span id="throughput" class="anchor-target"></span><span id="filesystem" class="anchor-target"></span><span id="subsystem" class="anchor-target"></span><h1 id="module-specification-cp-fs-high-throughput-filesystem-subsystem"><a href="#module-specification-cp-fs-high-throughput-filesystem-subsystem" class="heading-anchor">#</a> Module Specification: cp_fs (High-Throughput Filesystem Subsystem)</h1>
+<h2 id="1-tl-dr"><a href="#1-tl-dr" class="heading-anchor">#</a> 1. TL;DR</h2>
+<p>The <code>cp_fs</code> module provides atomic file reads into linear <code>Arena</code> memory, atomic file writes, directory scanning, and path manipulation utilities with zero libc heap fragmentation.</p>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-type">Arena</span> *arena = <span class="tok-func">ArenaCreate</span>(<span class="tok-number">64</span> * <span class="tok-number">1024</span>);
+
+<span class="tok-comment">/* Atomic Read into Arena Memory */</span>
+<span class="tok-func">StrView</span> content = <span class="tok-func">FileRead</span>(arena, <span class="tok-string">&quot;/etc/hosts&quot;</span>);
+<span class="tok-keyword">if</span> (content.data != <span class="tok-type">NULL</span>) {
+    printf(<span class="tok-string">&quot;Read %zu bytes from /etc/hosts\n&quot;</span>, content.len);
+}
+
+<span class="tok-comment">/* Atomic File Write */</span>
+<span class="tok-func">FileWrite</span>(<span class="tok-string">&quot;/tmp/config.cfg&quot;</span>, <span class="tok-string">&quot;timeout=30\n&quot;</span>, <span class="tok-number">11</span>);
+
+<span class="tok-func">ArenaDestroy</span>(arena);</code></pre></div>
+<hr />
+<span id="formal" class="anchor-target"></span><span id="definitions" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="internal" class="anchor-target"></span><span id="architecture" class="anchor-target"></span><h2 id="2-formal-definitions-amp-internal-architecture"><a href="#2-formal-definitions-amp-internal-architecture" class="heading-anchor">#</a> 2. Formal Definitions &amp; Internal Architecture</h2>
+<span id="atomic" class="anchor-target"></span><span id="read" class="anchor-target"></span><span id="engine" class="anchor-target"></span><span id="fileread" class="anchor-target"></span><h3 id="2-1-atomic-read-engine-fileread"><a href="#2-1-atomic-read-engine-fileread" class="heading-anchor">#</a> 2.1 Atomic Read Engine (<code>FileRead</code>)</h3>
+<ul>
+<li>Queries file size via POSIX <code>fstat()</code>.</li>
+<li>Allocates a contiguous block of <code>file_size + 1</code> bytes on the specified <code>Arena</code>.</li>
+<li>Reads the entire payload in a single <code>read()</code> system call, appending a trailing <code>\0</code> null byte.</li>
+<li>Returns a zero-allocation <code>StrView</code> referencing the arena buffer.</li>
+<li><code>FileReadScratch(path)</code> reads the file into the thread-local scratch arena ring, ideal for temporary parsing.</li>
+</ul>
+<span id="path" class="anchor-target"></span><span id="sanitization" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="querying" class="anchor-target"></span><h3 id="2-2-path-sanitization-amp-querying"><a href="#2-2-path-sanitization-amp-querying" class="heading-anchor">#</a> 2.2 Path Sanitization &amp; Querying</h3>
+<ul>
+<li>All path utilities (<code>PathExt</code>, <code>PathBase</code>, <code>PathDir</code>, <code>PathJoin</code>) work with <code>StrView</code> slices to avoid allocating temporary string buffers.</li>
+</ul>
+<hr />
+<span id="operational" class="anchor-target"></span><span id="guarantees" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="contracts" class="anchor-target"></span><h2 id="3-operational-guarantees-amp-contracts"><a href="#3-operational-guarantees-amp-contracts" class="heading-anchor">#</a> 3. Operational Guarantees &amp; Contracts</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>FileRead</th>
+<th>FileWrite</th>
+<th>Path Operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>I/O Complexity</strong></td>
+<td>$O(N)$ file size (single system call)</td>
+<td>$O(N)$ (single write system call)</td>
+<td>$O(1)$ pointer math</td>
+</tr>
+<tr>
+<td><strong>Memory Allocation</strong></td>
+<td>Linear Arena allocation</td>
+<td>0 heap allocations</td>
+<td>0 heap allocations</td>
+</tr>
+<tr>
+<td><strong>Null Termination</strong></td>
+<td>Guaranteed (<code>data[len] = '\0'</code>)</td>
+<td>Preserves binary bytes</td>
+<td>Preserves slice boundaries</td>
+</tr>
+<tr>
+<td><strong>Thread-Safety</strong></td>
+<td>Safe (atomic file descriptor)</td>
+<td>Safe (kernel write synchronization)</td>
+<td>Pure functions</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="api" class="anchor-target"></span><span id="matrix" class="anchor-target"></span><h2 id="4-api-matrix"><a href="#4-api-matrix" class="heading-anchor">#</a> 4. API Matrix</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>PascalCase Macro</th>
+<th>Dot-Notation API</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Read to Arena</td>
+<td><span id="fileread" class="anchor-target"></span><code>FileRead(arena, path)</code></td>
+<td><span id="read" class="anchor-target"></span><code>fs.read(arena, path)</code></td>
+<td>Read file into Arena buffer</td>
+</tr>
+<tr>
+<td>Read to Scratch</td>
+<td><span id="filereadscratch" class="anchor-target"></span><code>FileReadScratch(path)</code></td>
+<td>N/A</td>
+<td>Read file into temporary scratch</td>
+</tr>
+<tr>
+<td>Write Buffer</td>
+<td><span id="filewrite" class="anchor-target"></span><code>FileWrite(path, data, len)</code></td>
+<td><span id="write" class="anchor-target"></span><code>fs.write(path, data, len)</code></td>
+<td>Atomic file write / truncate</td>
+</tr>
+<tr>
+<td>Write StrView</td>
+<td><span id="filewritestr" class="anchor-target"></span><code>FileWriteStr(path, strview)</code></td>
+<td>N/A</td>
+<td>Write StrView slice directly to disk</td>
+</tr>
+<tr>
+<td>Append Buffer</td>
+<td><span id="fileappend" class="anchor-target"></span><code>FileAppend(path, data, len)</code></td>
+<td><span id="append" class="anchor-target"></span><code>fs.append(...)</code></td>
+<td>Append bytes to file</td>
+</tr>
+<tr>
+<td>Check Exists</td>
+<td><span id="fileexists" class="anchor-target"></span><code>FileExists(path)</code></td>
+<td><span id="exists" class="anchor-target"></span><code>fs.exists(path)</code></td>
+<td>Check file existence (stat)</td>
+</tr>
+<tr>
+<td>Check Is Dir</td>
+<td><span id="fileisdir" class="anchor-target"></span><code>FileIsDir(path)</code></td>
+<td><span id="isdir" class="anchor-target"></span><code>fs.isDir(path)</code></td>
+<td>Check if path is a directory</td>
+</tr>
+<tr>
+<td>File Size</td>
+<td><span id="filesize" class="anchor-target"></span><code>FileSize(path)</code></td>
+<td><span id="size" class="anchor-target"></span><code>fs.size(path)</code></td>
+<td>Query file size in bytes</td>
+</tr>
+<tr>
+<td>Delete File</td>
+<td><span id="fileremove" class="anchor-target"></span><code>FileRemove(path)</code></td>
+<td><span id="remove" class="anchor-target"></span><code>fs.remove(path)</code></td>
+<td>Unlink file from filesystem</td>
+</tr>
+<tr>
+<td>Create Dir</td>
+<td><span id="filemkdir" class="anchor-target"></span><code>FileMkdir(path)</code></td>
+<td><span id="mkdir" class="anchor-target"></span><code>fs.mkdir(path)</code></td>
+<td>Create single directory (0755)</td>
+</tr>
+<tr>
+<td>List Directory</td>
+<td><span id="filelistdir" class="anchor-target"></span><code>FileListDir(arena, path, &amp;cnt)</code></td>
+<td><span id="listdir" class="anchor-target"></span><code>fs.listDir(...)</code></td>
+<td>Read directory entries into StrView array</td>
+</tr>
+<tr>
+<td>Path Extension</td>
+<td><span id="pathext" class="anchor-target"></span><code>PathExt(path_sv)</code></td>
+<td>N/A</td>
+<td>Extract file extension (e.g. ".log")</td>
+</tr>
+<tr>
+<td>Path Basename</td>
+<td><span id="pathbase" class="anchor-target"></span><code>PathBase(path_sv)</code></td>
+<td>N/A</td>
+<td>Extract filename without directory</td>
+</tr>
+<tr>
+<td>Path Directory</td>
+<td><span id="pathdir" class="anchor-target"></span><code>PathDir(arena, path_sv)</code></td>
+<td>N/A</td>
+<td>Extract parent directory path</td>
+</tr>
+<tr>
+<td>Path Join</td>
+<td><span id="pathjoin" class="anchor-target"></span><code>PathJoin(arena, p1, p2)</code></td>
+<td>N/A</td>
+<td>Join two paths with slash separator</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<span id="use" class="anchor-target"></span><span id="cases" class="anchor-target"></span><h2 id="5-use-cases"><a href="#5-use-cases" class="heading-anchor">#</a> 5. Use Cases</h2>
+<ol>
+<li><strong>Config File Ingestion</strong>: Read JSON/YAML/INI configuration files into scratch memory in 1 call.</li>
+<li><strong>Directory Walkers &amp; Asset Loaders</strong>: Iterate asset files in game or web engines using <code>FileListDir</code>.</li>
+<li><strong>Atomic State Persistence</strong>: Save telemetry and binary state to disk using <code>FileWrite</code>.</li>
+</ol>
+<hr />
+<span id="complete" class="anchor-target"></span><span id="c11" class="anchor-target"></span><span id="usage" class="anchor-target"></span><span id="examples" class="anchor-target"></span><h2 id="6-complete-c11-usage-examples"><a href="#6-complete-c11-usage-examples" class="heading-anchor">#</a> 6. Complete C11 Usage Examples</h2>
+<span id="example" class="anchor-target"></span><span id="path" class="anchor-target"></span><span id="inspection" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="file" class="anchor-target"></span><span id="backup" class="anchor-target"></span><h3 id="example-path-inspection-amp-file-backup"><a href="#example-path-inspection-amp-file-backup" class="heading-anchor">#</a> Example: Path Inspection &amp; File Backup</h3>
+<div class="code-container"><div class="code-header"><span class="code-lang">C</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre class="code-pre"><code class="language-c"><span class="tok-macro">#include</span> <span class="tok-string">&quot;cplus/cplus.h&quot;</span>
+
+<span class="tok-keyword">void</span> backup_config(<span class="tok-keyword">const</span> <span class="tok-type">char</span> *source_path) {
+    <span class="tok-type">TempArena</span> scratch = <span class="tok-func">ScratchBegin</span>();
+    
+    <span class="tok-func">StrView</span> path_sv = <span class="tok-func">StrFromC</span>(source_path);
+    <span class="tok-func">StrView</span> filename = <span class="tok-func">PathBase</span>(path_sv);
+    <span class="tok-func">StrView</span> backup_dir = <span class="tok-func">S</span>(<span class="tok-string">&quot;/tmp/backups&quot;</span>);
+    
+    <span class="tok-func">FileMkdir</span>(<span class="tok-string">&quot;/tmp/backups&quot;</span>);
+    <span class="tok-func">StrView</span> target_path = <span class="tok-func">PathJoin</span>(scratch.arena, backup_dir, filename);
+    
+    <span class="tok-func">StrView</span> data = <span class="tok-func">FileRead</span>(scratch.arena, source_path);
+    <span class="tok-keyword">if</span> (data.data != <span class="tok-type">NULL</span>) {
+        <span class="tok-func">FileWriteStr</span>(target_path.data, data);
+        printf(<span class="tok-string">&quot;Backed up %zu bytes to %s\n&quot;</span>, data.len, target_path.data);
+    }
+    
+    <span class="tok-func">ScratchEnd</span>(scratch);
+}</code></pre></div>
+<hr />
+<span id="limitations" class="anchor-target"></span><span id="amp" class="anchor-target"></span><span id="operational" class="anchor-target"></span><span id="constraints" class="anchor-target"></span><h2 id="7-limitations-amp-operational-constraints"><a href="#7-limitations-amp-operational-constraints" class="heading-anchor">#</a> 7. Limitations &amp; Operational Constraints</h2>
+<ul>
+<li><strong>File Size Clamping</strong>: Files exceeding available system RAM cannot be mapped into an <code>Arena</code>. For gigabyte-scale datasets, use streaming reads or standard memory-mapped files.</li>
+<li><strong>Symlink Traversal</strong>: <code>FileExists</code> uses <code>stat()</code>, which resolves symbolic links.</li>
+</ul>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.borderColor = 'var(--azure)';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.borderColor = '';
+        }, 1500);
+      });
+    }
+
+    function scrollToAnchor() {
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+      const cleanHash = decodeURIComponent(rawHash).toLowerCase().replace(/[^a-z0-9_]/g, '');
+      let target = document.getElementById(rawHash) || document.getElementById(cleanHash);
+      if (!target) {
+        const candidates = document.querySelectorAll('h1, h2, h3, h4, td, code, th, span[id]');
+        for (const el of candidates) {
+          const id = (el.id || '').toLowerCase();
+          const text = (el.textContent || '').toLowerCase();
+          if (id === cleanHash || id.includes(cleanHash) || text.includes(cleanHash)) {
+            target = el.closest('tr') || el;
+            break;
+          }
+        }
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-target');
+        setTimeout(() => { target.classList.remove('highlight-target'); }, 2500);
+      }
+    }
+    window.addEventListener('DOMContentLoaded', scrollToAnchor);
+    window.addEventListener('hashchange', scrollToAnchor);
+  </script>
+</body>
+</html>
